@@ -5,24 +5,27 @@ from core.storage import Storage
 from utils.parser import parse_args
 from injections.boolean import BooleanInjector
 from injections.error import ErrorInjector
-
+from utils.logger import Logger
 
 def main():
 	requester = Requester()
 	analyzer = Analyzer()
 	args = parse_args()
 	storage = Storage(args.output)
-
 	boolean = BooleanInjector(requester, analyzer)
 	error = ErrorInjector(requester, analyzer)
-
 	scanner = Scanner(requester, analyzer, boolean, error)
+	Logger.DEBUG_ENABLED = args.debug
 
+	# Perform the tests on the URL
 	results = scanner.scan(args.url)
 
-	print("\n[*] Results:")
+	print()
+	Logger.success("Results:")
+	Logger.debug("eeeee")
 	print(results)
 
+	# Store the results of the tests on the storage file
 	storage.save({
         "url": args.url,
         "results": results

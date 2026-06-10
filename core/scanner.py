@@ -3,6 +3,8 @@ from core.requester import Requester
 from core.analyzer import Analyzer
 from injections.boolean import BooleanInjector
 from injections.error import ErrorInjector
+from utils.logger import Logger
+
 
 class Scanner:
 	def __init__(self,
@@ -16,12 +18,12 @@ class Scanner:
 
 	def scan(self, url: str):
 		params = extract_params(url)
-		print(f"params: {params}")
+		Logger.debug(f"params: {params}")
 
 		results = []
 
 		for param in params:
-			print(f"[*] Testing {param}")
+#			logger.info(f"[*] Testing {param}")
 
 			is_bool = self.boolean.test(url, param)
 			is_error = self.error.test(url, param)

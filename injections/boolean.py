@@ -16,6 +16,4 @@ class BooleanInjector:
 			url, "GET", {param: "1 AND 1=2"}
 		)
 
-		# print(r_true)
-
 		return self.analyzer.responses_differ(r_true, r_false)
