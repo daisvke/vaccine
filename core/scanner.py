@@ -23,16 +23,15 @@ class Scanner:
 		results = []
 
 		for param in params:
-#			logger.info(f"[*] Testing {param}")
+			Logger.info(f"Testing {param}")
 
 			is_bool = self.boolean.test(url, param)
 			is_error = self.error.test(url, param)
 
-			if is_bool or is_error:
-				results.append({
-					"param": param,
-					"boolean": is_bool,
-					"error": is_error,
-				})
+			results.append({
+				"param": param,
+				"boolean": is_bool,
+				"error": is_error,
+			})
 
 		return results

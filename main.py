@@ -7,10 +7,26 @@ from injections.boolean import BooleanInjector
 from injections.error import ErrorInjector
 from utils.logger import Logger
 
+
+def print_results(results: list[dict]) -> None:
+	headers = ["Parameter", "Boolean", "Error"]
+
+	print(f"\n{headers[0]:<15}{headers[1]:<10}{headers[2]:<10}")
+	print("-" * 35)
+
+	for r in results:
+		print(
+			f"{r['param']:<15}"
+			f"{str(r['boolean']):<10}"
+			f"{str(r['error']):<10}"
+		)
+	print()
+
+
 def main():
-	requester = Requester()
-	analyzer = Analyzer()
 	args = parse_args()
+	requester = Requester(user_agent=args.agent)
+	analyzer = Analyzer()
 	storage = Storage(args.output)
 	boolean = BooleanInjector(requester, analyzer)
 	error = ErrorInjector(requester, analyzer)
@@ -25,13 +41,18 @@ def main():
 
 	print()
 	Logger.success("Results:")
-	print(results)
+	if results != []:
+		print(Logger.RED + "Found vulnerabilities!" + Logger.RESET)
+	else:
+		print(Logger.GREEN + "No vulnerability found" + Logger.RESET)
+	print_results(results)
 
 	# Store the results of the tests on the storage file
 	storage.save({
-        "url": args.url,
-        "results": results
-    })
+		"url": args.url,
+		"method": args.method,
+		"results": results
+	})
 
 if __name__ == "__main__":
 	main()

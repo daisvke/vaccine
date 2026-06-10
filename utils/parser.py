@@ -5,12 +5,14 @@ import argparse
 def parse_args() -> argparse.Namespace:
 	p = argparse.ArgumentParser()
 
+	# Target URL
 	p.add_argument(
 		"url",
 		type=str,
 		help="Target URL"
 	)
 
+	# Method used by the request
 	p.add_argument(
 		"-X",
 		"--method",
@@ -20,6 +22,7 @@ def parse_args() -> argparse.Namespace:
 		help="HTTP method"
 	)
 
+	# Results storage file name
 	p.add_argument(
 		"-o",
 		"--output",
@@ -28,11 +31,20 @@ def parse_args() -> argparse.Namespace:
 		help="Output file"
 	)
 
+	# Enable debug mode
 	p.add_argument(
-		"-d",
+		"-D",
 		"--debug",
 		action='store_true',
 		help="Enable debug mode"
+	)
+
+	# Use custom User-Agent
+	p.add_argument(
+		"-A",
+		"--agent",
+		type=str,
+		help="Custom User-Agent"
 	)
 
 	return p.parse_args()
