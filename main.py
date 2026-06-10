@@ -15,14 +15,16 @@ def main():
 	boolean = BooleanInjector(requester, analyzer)
 	error = ErrorInjector(requester, analyzer)
 	scanner = Scanner(requester, analyzer, boolean, error)
-	Logger.DEBUG_ENABLED = args.debug
+
+	if args.debug:
+		Logger.DEBUG_ENABLED = True
+		Logger.success("Enabled debug mode")
 
 	# Perform the tests on the URL
 	results = scanner.scan(args.url)
 
 	print()
 	Logger.success("Results:")
-	Logger.debug("eeeee")
 	print(results)
 
 	# Store the results of the tests on the storage file

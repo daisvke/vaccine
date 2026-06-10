@@ -1,6 +1,9 @@
+from utils.logger import Logger
+
+
 class Analyzer:
 	def responses_differ(self, r1: dict, r2: dict):
-		print(f"Diff: {len(r1.body)},  {len(r2.body)}")
+		Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}")
 
 		return len(r1.body) != len(r2.body)
 

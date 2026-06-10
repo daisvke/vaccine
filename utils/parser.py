@@ -1,5 +1,4 @@
 from urllib.parse import urlparse, parse_qs
-
 import argparse
 
 
@@ -32,9 +31,8 @@ def parse_args() -> argparse.Namespace:
 	p.add_argument(
 		"-d",
 		"--debug",
-		type=bool,
-		default=False,
-		help="Debug mode"
+		action='store_true',
+		help="Enable debug mode"
 	)
 
 	return p.parse_args()

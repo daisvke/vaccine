@@ -11,11 +11,12 @@ do
 	# split on `|` and read pieces into variables` METHOD` `URL`
     IFS='|' read -r METHOD URL <<< "$test"
 
-    echo "Testing: $URL"
+    echo -e "Testing: \033[33m$URL\033[0m"
 
     python3 main.py \
         -X "$METHOD" \
-        "$URL"
+        "$URL" \
+		--debug
 
     echo
 done
