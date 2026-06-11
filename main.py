@@ -6,22 +6,7 @@ from utils.parser import parse_args
 from injections.boolean import BooleanInjector
 from injections.error import ErrorInjector
 from utils.logger import Logger
-
-
-def print_results(results: list[dict]) -> None:
-	headers = ["Parameter", "Boolean", "Error"]
-
-	print(f"\n{headers[0]:<15}{headers[1]:<10}{headers[2]:<10}")
-	print("-" * 35)
-
-	for r in results:
-		print(
-			f"{r['param']:<15}"
-			f"{str(r['boolean']):<10}"
-			f"{str(r['error']):<10}"
-		)
-	print()
-
+from utils.print import print_results
 
 def main():
 	args = parse_args()
@@ -39,12 +24,6 @@ def main():
 	# Perform the tests on the URL
 	results = scanner.scan(args.url)
 
-	print()
-	Logger.success("Results:")
-	if results != []:
-		print(Logger.RED + "Found vulnerabilities!" + Logger.RESET)
-	else:
-		print(Logger.GREEN + "No vulnerability found" + Logger.RESET)
 	print_results(results)
 
 	# Store the results of the tests on the storage file

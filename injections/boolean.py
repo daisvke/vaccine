@@ -7,7 +7,7 @@ class BooleanInjector:
 		self.requester = requester
 		self.analyzer = analyzer
 
-	def test(self, url: str, param: dict):
+	def test(self, url: str, param: dict) -> bool:
 		r_true = self.requester.send(
 			url, "GET", {param: "1 AND 1=1"}
 		)

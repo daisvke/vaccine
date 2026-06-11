@@ -26,12 +26,18 @@ class Scanner:
 			Logger.info(f"Testing {param}")
 
 			is_bool = self.boolean.test(url, param)
-			is_error = self.error.test(url, param)
+			is_error, payload, database = self.error.test(url, param)
 
 			results.append({
 				"param": param,
-				"boolean": is_bool,
-				"error": is_error,
+				"boolean": {
+					"detected": is_bool,
+				},
+				"error": {
+					"detected": is_error,
+					"payload": payload,
+					"database": database,
+				},
 			})
 
 		return results

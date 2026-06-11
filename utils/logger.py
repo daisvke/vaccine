@@ -1,11 +1,7 @@
+from utils.colors import BLUE, GREEN, YELLOW, RED, RESET
+
+
 class Logger:
-	RESET = "\033[0m"
-
-	RED = "\033[31m"
-	GREEN = "\033[32m"
-	YELLOW = "\033[33m"
-	BLUE = "\033[34m"
-
 	DEBUG_ENABLED = False
 
 	@staticmethod
@@ -15,16 +11,16 @@ class Logger:
 
 	@staticmethod
 	def info(msg: str) -> None:
-		print(f"{Logger.BLUE}[INFO]{Logger.RESET} {msg}")
+		print(f"{BLUE}[INFO]{RESET} {msg}")
 
 	@staticmethod
 	def success(msg: str) -> None:
-		print(f"[{Logger.GREEN}*{Logger.RESET}] {msg}")
+		print(f"[{GREEN}*{RESET}] {msg}")
 
 	@staticmethod
 	def warning(msg: str) -> None:
-		print(f"{Logger.YELLOW}[WARNING]{Logger.RESET} {msg}")
+		print(f"{YELLOW}[WARNING]{RESET} {msg}")
 
 	@staticmethod
 	def error(msg: str) -> None:
-		print(f"{Logger.RED}[ERROR]{Logger.RESET} {msg}")
+		print(f"{RED}[ERROR]{RESET} {msg}")
