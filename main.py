@@ -5,8 +5,10 @@ from core.storage import Storage
 from utils.parser import parse_args
 from injections.boolean import BooleanInjector
 from injections.error import ErrorInjector
+from injections.union import UnionInjector
 from utils.logger import Logger
 from utils.print import print_results
+
 
 def main():
 	args = parse_args()
@@ -15,7 +17,8 @@ def main():
 	storage = Storage(args.output)
 	boolean = BooleanInjector(requester, analyzer)
 	error = ErrorInjector(requester, analyzer)
-	scanner = Scanner(requester, analyzer, boolean, error)
+	union = UnionInjector(requester, analyzer)
+	scanner = Scanner(requester, analyzer, boolean, error, union)
 
 	if args.debug:
 		Logger.DEBUG_ENABLED = True

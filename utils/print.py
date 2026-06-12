@@ -16,7 +16,7 @@ def print_results(results: list[dict]) -> None:
 
 	detected = 0
 	detected = sum(
-		r["boolean"]["detected"] + r["error"]["detected"]
+		r["boolean"]["detected"] + r["error"]["detected"] + r["union"]["detected"]
 		for r in results
 	)
 
@@ -57,12 +57,22 @@ def print_results(results: list[dict]) -> None:
 			36
 		)
 
+		union_detail = colored_detail(
+			"✓" if result["union"]["detected"] else "✗",
+			result["union"]["detected"],
+			36
+		)
+
 		print(
 			f"| {param:<9} | {'Boolean':<8} | {bool_detail} |"
 		)
 
 		print(
 			f"| {'':<9} | {'Error':<8} | {error_detail} |"
+		)
+
+		print(
+			f"| {'':<9} | {'Union':<8} | {union_detail} |"
 		)
 
 		print("+-----------+----------+--------------------------------------+")
