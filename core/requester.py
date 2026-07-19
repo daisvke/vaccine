@@ -12,8 +12,11 @@ class HttpResponse:
 
 
 class Requester:
-	def __init__(self, timeout=10, user_agent=None):
+	def __init__(
+		self, timeout: int=10, method: str="GET", user_agent: str=None
+	):
 		self.timeout = timeout
+		self.method = method.upper()
 		self.session = requests.Session()
 		user_agent = user_agent or "Vaccine/1.0"
 		self.session.headers.update({
@@ -21,14 +24,43 @@ class Requester:
 		})
 		Logger.info(f"User-Agent: {user_agent}")
 
-	def send(self, url: str, method: str="GET", params: dict[str, str]=None) -> HttpResponse:
+	def login(
+		self,
+		url: str,
+		username: str,
+		password: str
+	) -> None:
+		"""Some pages need login"""
+
+		Logger.info("Logging in...")
+		response = self.session.post(
+			url,
+			data={
+				"username": username,
+				"password": password,
+			}
+		)
+
+		Logger.debug(response.text)
+
+		if response.status_code != 200:
+			raise RuntimeError(
+				f"Login failed: HTTP {response.status_code}"
+			)
+		Logger.success("Successfully logged in")
+
+	def send(
+		self,
+		url: str,
+		params: dict[str, str]=None
+	) -> HttpResponse:
+		"""Send the HTTP request to the URL"""
 		try:
 			params = params or {}
-			method = method.upper()
 
-			if method == "GET":
+			if self.method == "GET":
 				r = self.session.get(url, params=params, timeout=self.timeout)
-			elif method == "POST":
+			elif self.method == "POST":
 				r = self.session.post(url, data=params, timeout=self.timeout)
 			else:
 				raise ValueError(
@@ -43,6 +75,5 @@ class Requester:
 			)
 			
 		except requests.RequestException as e:
-			raise RuntimeError(
-				f"Request failed: {e}"
-			) from e
+			Logger.error(f"Request failed: {e}")
+			exit(1)

@@ -1,4 +1,4 @@
-from utils.colors import BLUE, GREEN, YELLOW, RED, RESET
+from utils.constants import BLUE, GREEN, YELLOW, RED, RESET
 
 
 class Logger:

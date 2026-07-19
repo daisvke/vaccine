@@ -1,5 +1,5 @@
 from utils.logger import Logger
-from utils.colors import GREEN, RED, RESET
+from utils.constants import GREEN, RED, RESET
 
 
 def status(value: bool) -> str:

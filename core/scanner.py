@@ -27,7 +27,11 @@ class Scanner:
 		for param in params:
 			Logger.info(f"Testing {param}")
 
-			is_bool = self.boolean.test(url, param)
+			# Check if the parameter is quoted or unquoted in the DB query
+			context = self.error.detect_context(url, param)
+			Logger.success(f"Detected injection context: `{context.name}`")
+
+			is_bool = self.boolean.test(url, param, context)
 			is_error, payload, database = self.error.test(url, param)
 
 			db = self.union.test_db_name(url, param)

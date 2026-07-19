@@ -63,5 +63,6 @@ class Analyzer:
 		]
 
 		body = response.body.lower()
+#		Logger.debug(f"body: {body}")
 		return any(e in body for e in errors)
 			
