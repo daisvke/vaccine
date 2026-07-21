@@ -32,7 +32,7 @@ class ErrorInjector:
 			name="unquoted"
 		)
 
-	def test(self, url: str, param: dict) -> tuple[bool, str | None, str | None]:
+	def test(self, url: str, param: str) -> tuple[bool, str | None, str | None]:
 		payloads = ["'", '"', "'", "1' -- -", "1'"]
 
 		for p in payloads:

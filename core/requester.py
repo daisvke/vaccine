@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 import requests
 from dataclasses import dataclass
 from utils.logger import Logger
@@ -7,13 +8,13 @@ from utils.logger import Logger
 class HttpResponse:
 	status: int
 	body: str
-	headers: dict
+	headers: Mapping[str, str]
 	elapsed: float
 
 
 class Requester:
 	def __init__(
-		self, timeout: int=10, method: str="GET", user_agent: str=None
+		self, timeout: int=10, method: str="GET", user_agent: str|None=None
 	):
 		self.timeout = timeout
 		self.method = method.upper()
@@ -32,17 +33,22 @@ class Requester:
 	) -> None:
 		"""Some pages need login"""
 
-		Logger.info("Logging in...")
-		response = self.session.post(
-			url,
-			data={
-				"username": username,
-				"password": password,
-			}
-		)
+		Logger.info(f"Logging in at {url} with username: {username} and password: {password}...")
+
+		try:
+			response = self.session.post(
+				url,
+				data={
+					"username": username,
+					"password": password,
+				}
+			)
+
+		except requests.RequestException as e:
+			Logger.error(f"Request failed: {e}")
+			exit(1)
 
 		Logger.debug(response.text)
-
 		if response.status_code != 200:
 			raise RuntimeError(
 				f"Login failed: HTTP {response.status_code}"
@@ -52,7 +58,7 @@ class Requester:
 	def send(
 		self,
 		url: str,
-		params: dict[str, str]=None
+		params: dict[str, str] | None = None
 	) -> HttpResponse:
 		"""Send the HTTP request to the URL"""
 		try:
@@ -64,7 +70,7 @@ class Requester:
 				r = self.session.post(url, data=params, timeout=self.timeout)
 			else:
 				raise ValueError(
-					f"Unsupported method: {method}"
+					f"Unsupported method: {self.method}"
 				)
 				
 			return HttpResponse(

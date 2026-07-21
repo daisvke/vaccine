@@ -20,6 +20,10 @@ class Scanner:
 
 	def scan(self, url: str):
 		params = extract_params(url)
+
+		if params == {}:
+			Logger.warning("No params found, exiting...")
+			exit(0)
 		Logger.debug(f"params: {params}")
 
 		results = []

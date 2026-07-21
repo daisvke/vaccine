@@ -14,7 +14,7 @@ class BooleanInjector:
 		self.requester = requester
 		self.analyzer = analyzer
 
-	def test(self, url: str, param: dict, ctx: InjectionContext) -> bool:
+	def test(self, url: str, param: str, ctx: InjectionContext) -> bool:
 		r_true = self.requester.send(
 			url,
 			{

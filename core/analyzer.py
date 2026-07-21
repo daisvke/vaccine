@@ -1,3 +1,4 @@
+from core.requester import HttpResponse
 from utils.logger import Logger
 
 
@@ -30,7 +31,9 @@ DATABASE_ERRORS = {
 
 
 class Analyzer:
-	def responses_differ(self, r1: dict, r2: dict) -> bool:
+	def responses_differ(self, r1: HttpResponse, r2: HttpResponse) -> bool:
+		# Logger.debug(r1.body)
+		# Logger.debug(r2.body)
 		Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}")
 
 		if r1.status != r2.status:
@@ -51,7 +54,7 @@ class Analyzer:
 
 		return "Unknown"
 
-	def has_sql_error(self, response: dict):
+	def has_sql_error(self, response: HttpResponse):
 		errors = [
 			"mariadb",
 			"sql",
