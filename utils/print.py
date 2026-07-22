@@ -11,7 +11,6 @@ def status(value: bool) -> str:
 
 def print_results(results: list[dict]) -> None:
 	print()
-
 	Logger.success("Results:")
 
 	detected = 0

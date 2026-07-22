@@ -25,36 +25,6 @@ class Requester:
 		})
 		Logger.info(f"User-Agent: {user_agent}")
 
-	def login(
-		self,
-		url: str,
-		username: str,
-		password: str
-	) -> None:
-		"""Some pages need login"""
-
-		Logger.info(f"Logging in at {url} with username: {username} and password: {password}...")
-
-		try:
-			response = self.session.post(
-				url,
-				data={
-					"username": username,
-					"password": password,
-				}
-			)
-
-		except requests.RequestException as e:
-			Logger.error(f"Request failed: {e}")
-			exit(1)
-
-		Logger.debug(response.text)
-		if response.status_code != 200:
-			raise RuntimeError(
-				f"Login failed: HTTP {response.status_code}"
-			)
-		Logger.success("Successfully logged in")
-
 	def send(
 		self,
 		url: str,

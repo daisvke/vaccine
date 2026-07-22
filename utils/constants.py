@@ -23,3 +23,12 @@ class InjectionContext:
     prefix: str
     suffix: str
     name: str
+
+
+"""
+Etc
+"""
+
+differ_length_bool = 50
+differ_length_col_count = 100
+diff_marker = "DF4456DdgZERZERAA768"

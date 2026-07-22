@@ -29,18 +29,31 @@ class Scanner:
 		results = []
 
 		for param in params:
-			Logger.info(f"Testing {param}")
+			print('\n')
+			Logger.info(f"---------- Testing parameter: `{param}` ----------\n")
 
 			# Check if the parameter is quoted or unquoted in the DB query
 			context = self.error.detect_context(url, param)
 			Logger.success(f"Detected injection context: `{context.name}`")
 
+			column_count = self.union.find_column_count(url, param, context)
+			if not column_count:
+				Logger.error("Failed to get column count for the SQL query")
+				continue
+			Logger.success(f"Found column count: {column_count}")
+    
 			is_bool = self.boolean.test(url, param, context)
+			Logger.success(f"Boolean based injection successful!")
 			is_error, payload, database = self.error.test(url, param)
+			Logger.success(f"Error based injection successful!")
 
-			db = self.union.test_db_name(url, param)
-			tables = self.union.test_tables(url, param)
-#			columns = self.union.test_columns(url, param)
+			# db = self.union.test_db_name(url, param)
+			db = None
+			tables = self.union.test_tables(url, param, context, column_count)
+			Logger.success(f"Union based injection successful!")
+			# if tables:
+				# Logger.debug(tables)
+				
 			is_union = True if db or tables else False
 
 			results.append({

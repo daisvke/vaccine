@@ -2,7 +2,7 @@ from utils.constants import BLUE, GREEN, YELLOW, RED, RESET
 
 
 class Logger:
-	DEBUG_ENABLED = False
+	DEBUG_ENABLED: bool = False
 
 	@staticmethod
 	def debug(msg: str) -> None:

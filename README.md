@@ -64,6 +64,8 @@ vaccine/
 # Run docker
 sudo docker run --rm -it -p 4280:80 vulnerables/web-dvwa
 
+# If using WSL or VM
+
 # Get WSL IP
 hostname -I
 > 192.168.47.192 172.17.0.1

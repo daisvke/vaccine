@@ -15,9 +15,9 @@ class ErrorInjector:
 
 		if self.analyzer.has_sql_error(response):
 			Logger.info("Detected SQL error message with quote in the parameter...")
+   
 			response = self.requester.send(url, {param: "1' -- -"})
-
-			if self.analyzer.has_sql_error(response):
+			if not self.analyzer.has_sql_error(response):
 				Logger.info("SQL error is avoided with commenting trailing characters...")
 
 				return InjectionContext(
@@ -37,7 +37,7 @@ class ErrorInjector:
 
 		for p in payloads:
 			response = self.requester.send(url, {param: p})
-			Logger.debug(f"payload: {p}")
+			# Logger.debug(f"payload: {p}")
 
 			if self.analyzer.has_sql_error(response):
 				return True, p, self.analyzer.detect_database(response.body)

@@ -31,7 +31,7 @@ DATABASE_ERRORS = {
 
 
 class Analyzer:
-	def responses_differ(self, r1: HttpResponse, r2: HttpResponse) -> bool:
+	def responses_differ(self, r1: HttpResponse, r2: HttpResponse, diff: int) -> bool:
 		# Logger.debug(r1.body)
 		# Logger.debug(r2.body)
 		Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}")
@@ -39,7 +39,7 @@ class Analyzer:
 		if r1.status != r2.status:
 			return True
 
-		if abs(len(r1.body) - len(r2.body)) > 50:
+		if abs(len(r1.body) - len(r2.body)) > diff:
 			return True
 
 		return False
@@ -62,7 +62,9 @@ class Analyzer:
 			"sqlite",
 			"ora-",
 			"syntax error",
-			"warning"
+			"warning",
+   			"the used select statements have a different number of columns",
+      		"unknown column",
 		]
 
 		body = response.body.lower()
