@@ -43,9 +43,13 @@ class Scanner:
 			Logger.success(f"Found column count: {column_count}")
     
 			is_bool = self.boolean.test(url, param, context)
-			Logger.success(f"Boolean based injection successful!")
-			is_error, payload, database = self.error.test(url, param)
-			Logger.success(f"Error based injection successful!")
+			if is_bool:
+				Logger.success(f"Boolean based injection successful!")
+				
+			payload, database = self.error.test(url, param)
+			is_error = True if payload else False
+			if is_error:
+				Logger.success(f"Error based injection successful!")
 
 			# db = self.union.test_db_name(url, param)
 			db = None

@@ -32,15 +32,19 @@ class ErrorInjector:
 			name="unquoted"
 		)
 
-	def test(self, url: str, param: str) -> tuple[bool, str | None, str | None]:
+	def test(self, url: str, param: str) -> tuple[list[str] | None, str | None]:
 		payloads = ["'", '"', "'", "1' -- -", "1'"]
+		payloads_success = []  # payload which injection worked
+		database = None
 
 		for p in payloads:
 			response = self.requester.send(url, {param: p})
 			# Logger.debug(f"payload: {p}")
 
 			if self.analyzer.has_sql_error(response):
-				return True, p, self.analyzer.detect_database(response.body)
+				if not database:
+					database = self.analyzer.detect_database(response.body)
+				payloads_success.append(p)
 
-		return False, None, None
+		return payloads_success, database
 

@@ -28,10 +28,9 @@ def print_results(results: list[dict]) -> None:
 		color = GREEN if ok else RED
 		return f"{color}{text.ljust(width)}{RESET}"
 
-
-	print("+-----------+----------+--------------------------------------+")
-	print("| Parameter | Test     | Details                              |")
-	print("+-----------+----------+--------------------------------------+")
+	print("+-----------+----------+--------------------------------------------------------------+")
+	print("| Parameter | Test     | Details                                                      |")
+	print("+-----------+----------+--------------------------------------------------------------+")
 
 	for result in results:
 		param = result["param"]
@@ -39,13 +38,19 @@ def print_results(results: list[dict]) -> None:
 		bool_detail = colored_detail(
 			"✓" if result["boolean"]["detected"] else "✗",
 			result["boolean"]["detected"],
-			36
+			60
 		)
 
 		if result["error"]["detected"]:
+			# Create a string that lists all the working payloads
+			payloads = ", ".join(
+				payload
+				for payload in result["error"]["payload"]
+			)
+   
 			text = (
 				f"✓ {result['error']['database']} "
-				f"(payload: {result['error']['payload']})"
+				f"(payload(s): {payloads})"
 			)
 		else:
 			text = "✗"
@@ -53,13 +58,13 @@ def print_results(results: list[dict]) -> None:
 		error_detail = colored_detail(
 			text,
 			result["error"]["detected"],
-			36
+			60
 		)
 
 		union_detail = colored_detail(
 			"✓" if result["union"]["detected"] else "✗",
 			result["union"]["detected"],
-			36
+			60
 		)
 
 		print(
@@ -74,4 +79,4 @@ def print_results(results: list[dict]) -> None:
 			f"| {'':<9} | {'Union':<8} | {union_detail} |"
 		)
 
-		print("+-----------+----------+--------------------------------------+")
+		print("+-----------+----------+--------------------------------------------------------------+")
