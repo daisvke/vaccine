@@ -16,6 +16,10 @@ class Logger:
 	@staticmethod
 	def success(msg: str) -> None:
 		print(f"[{GREEN}*{RESET}] {msg}")
+	
+	@staticmethod
+	def failure(msg: str) -> None:
+		print(f"[{RED}*{RESET}] {msg}")
 
 	@staticmethod
 	def warning(msg: str) -> None:

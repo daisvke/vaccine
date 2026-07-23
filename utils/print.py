@@ -15,7 +15,7 @@ def print_results(results: list[dict]) -> None:
 
 	detected = 0
 	detected = sum(
-		r["boolean"]["detected"] + r["error"]["detected"] + r["union"]["detected"]
+		r["boolean"]["detected"] + r["error"]["detected"] + r["union"]["detected"] + r["time"]["detected"]
 		for r in results
 	)
 

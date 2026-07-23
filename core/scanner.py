@@ -56,6 +56,8 @@ class Scanner:
 				continue
 			Logger.success(f"Found column count: {column_count}")
 
+			print()
+			Logger.info("Running injections...\n")
 
 			"""
 			Run a boolean based test
@@ -64,6 +66,8 @@ class Scanner:
 			is_bool = self.boolean.test(url, param, context)
 			if is_bool:
 				Logger.success(f"Boolean based injection successful!")
+			else:
+				Logger.failure(f"Boolean based injection unsuccessful")
 
 
 			"""
@@ -74,6 +78,8 @@ class Scanner:
 			is_error = True if payload else False
 			if is_error:
 				Logger.success(f"Error based injection successful!")
+			else:
+				Logger.failure(f"Error based injection unsuccessful")
 
 
 			"""
@@ -84,9 +90,11 @@ class Scanner:
 			db = None
 			tables = self.union.test_tables(url, param, context, column_count)
 			if tables:
-				Logger.success(f"Union based injection successful!")
+				Logger.success(f"UNION based injection successful!")
 				# Logger.debug(tables)
-				
+			else:
+				Logger.failure(f"UNION based injection unsuccessful")
+
 			is_union = True if db or tables else False
 
 
@@ -97,6 +105,8 @@ class Scanner:
 			is_time = self.time.test(url, param, context)
 			if is_time:
 				Logger.success(f"Time based injection successful!")
+			else:
+				Logger.failure(f"Time based injection unsuccessful")
 
 
 			"""
