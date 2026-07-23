@@ -3,6 +3,12 @@ from utils.logger import Logger
 
 
 DATABASE_ERRORS = {
+	"Microsoft SQL Server": [
+		"unclosed quotation mark",
+		"microsoft sql server",
+		"sql server"
+	],
+
 	"MariaDB": [
 		"mariadb"
 	],
@@ -21,12 +27,6 @@ DATABASE_ERRORS = {
 		"ora-",
 		"oracle error"
 	],
-
-	"Microsoft SQL Server": [
-		"unclosed quotation mark",
-		"microsoft sql server",
-		"sql server"
-	]
 }
 
 
@@ -71,3 +71,7 @@ class Analyzer:
 #		Logger.debug(f"body: {body}")
 		return any(e in body for e in errors)
 			
+	def is_delayed(self, r_normal: HttpResponse, r_sleep: HttpResponse, sleep: int):
+		return (
+			r_sleep.elapsed - r_normal.elapsed >= sleep - 0.5
+		)

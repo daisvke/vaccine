@@ -35,12 +35,18 @@ def print_results(results: list[dict]) -> None:
 	for result in results:
 		param = result["param"]
 
+		"""
+		BOOL
+  		"""
 		bool_detail = colored_detail(
 			"✓" if result["boolean"]["detected"] else "✗",
 			result["boolean"]["detected"],
 			60
 		)
 
+		"""
+		ERROR
+  		"""
 		if result["error"]["detected"]:
 			# Create a string that lists all the working payloads
 			payloads = ", ".join(
@@ -61,12 +67,27 @@ def print_results(results: list[dict]) -> None:
 			60
 		)
 
+		"""
+		UNION
+  		"""
 		union_detail = colored_detail(
 			"✓" if result["union"]["detected"] else "✗",
 			result["union"]["detected"],
 			60
 		)
 
+		"""
+		TIME
+  		"""
+		time_detail = colored_detail(
+			"✓" if result["time"]["detected"] else "✗",
+			result["time"]["detected"],
+			60
+		)
+  
+		"""
+		Print each test
+  		"""
 		print(
 			f"| {param:<9} | {'Boolean':<8} | {bool_detail} |"
 		)
@@ -77,6 +98,10 @@ def print_results(results: list[dict]) -> None:
 
 		print(
 			f"| {'':<9} | {'Union':<8} | {union_detail} |"
+		)
+  
+		print(
+			f"| {'':<9} | {'Time':<8} | {time_detail} |"
 		)
 
 		print("+-----------+----------+--------------------------------------------------------------+")

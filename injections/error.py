@@ -9,6 +9,11 @@ class ErrorInjector:
 		self.analyzer = analyzer
 
 	def detect_context(self, url, param):
+		"""
+		Determine the prefix and suffix of our SQL queries according to the
+		way the target query is formed.
+  		"""
+  
 		Logger.info("Context detection...")
 		response = self.requester.send(url, {param: "1'"})
 		#Logger.debug(response)
@@ -33,6 +38,11 @@ class ErrorInjector:
 		)
 
 	def test(self, url: str, param: str) -> tuple[list[str] | None, str | None]:
+		"""
+		Test the different payloads to check if they produce SQL error messages.
+		If they do, it would mean that the injection has worked.
+  		"""
+  
 		payloads = ["'", '"', "'", "1' -- -", "1'"]
 		payloads_success = []  # payload which injection worked
 		database = None

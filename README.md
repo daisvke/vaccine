@@ -1,5 +1,7 @@
 # vaccine
 
+no login handling
+
 User
  │
  ▼
@@ -29,35 +31,6 @@ Enumerator
  ▼
 Storage
 
----
-
-vaccine/
-│
-├── main.py
-│
-├── core/
-│   ├── scanner.py
-│   ├── requester.py
-│   ├── analyzer.py
-│   └── storage.py
-│
-├── injections/
-│   ├── boolean.py
-│   ├── error.py
-│   └── union.py
-│
-├── databases/
-│   ├── mysql.py
-│   ├── sqlite.py
-│   └── fingerprint.py
-│
-├── models/
-│   ├── target.py
-│   ├── result.py
-│   └── vulnerability.py
-│
-└── data/
-    └── vaccine.json
 
 ## Websites
 ```sh
