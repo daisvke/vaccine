@@ -26,7 +26,7 @@ class InjectionContext:
 
 
 """
-Max values
+Heigh values
 """
 
 HEIGH_NAME_LENGTH = 64
