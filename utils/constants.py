@@ -26,9 +26,17 @@ class InjectionContext:
 
 
 """
+Max values
+"""
+
+HEIGH_NAME_LENGTH = 64
+HEIGH_ELEMENT_COUNT = 1000
+
+
+"""
 Etc
 """
 
-differ_length_bool = 50
-differ_length_col_count = 100
-diff_marker = "DF4456DdgZERZERAA768"
+DIFFER_LENGTH_BOOL = 50
+DIFFER_LENGTH_COL_COUNT = 100
+DIFF_MARKER = "DF4456DdgZERZERAA768"

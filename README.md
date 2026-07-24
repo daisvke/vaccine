@@ -1,7 +1,19 @@
 # vaccine
 
-no login handling
+SQL injection (SQLi)
 
+SELECT first_name, last_name
+FROM users
+WHERE id = <input>;
+
+- Boolean SQLi: injects into the query's WHERE clause and infers information from different responses.
+- UNION SQLi: appends another SELECT to return additional rows or values.
+- Time SQLi: uses conditional delays.
+- Error SQLi: relies on database error messages.
+
+---
+no login handling
+---
 User
  │
  ▼

