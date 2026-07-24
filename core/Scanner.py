@@ -1,11 +1,13 @@
-from injections.time import TimeInjector
+from utils.constants import RESET, YELLOW
 from utils.parser import extract_params
-from core.requester import Requester
-from core.analyzer import Analyzer
-from injections.boolean import BooleanInjector
-from injections.error import ErrorInjector
-from injections.union import UnionInjector
-from utils.logger import Logger
+from core.Requester import Requester
+from core.Analyzer import Analyzer
+from extractor.BlindExtractor import BlindExtractor
+from injections.BooleanInjector import BooleanInjector
+from injections.ErrorInjector import ErrorInjector
+from injections.UnionInjector import UnionInjector
+from injections.TimeInjector import TimeInjector
+from utils.Logger import Logger
 
 
 class Scanner:
@@ -13,6 +15,7 @@ class Scanner:
 			requester: Requester, analyzer: Analyzer,
 			boolean: BooleanInjector, error: ErrorInjector,
    			union: UnionInjector, time: TimeInjector,
+			extract: BlindExtractor,
 		):
 		self.requester = requester
 		self.analyzer = analyzer
@@ -20,6 +23,7 @@ class Scanner:
 		self.error = error
 		self.union = union
 		self.time = time
+		self.extract = extract
 
 	def scan(self, url: str):
 		params = extract_params(url)
@@ -54,7 +58,7 @@ class Scanner:
 			if not column_count:
 				Logger.error("Failed to get column count for the SQL query")
 				continue
-			Logger.success(f"Found column count: {column_count}")
+			Logger.success(f"Found column count: {YELLOW}{column_count}{RESET}")
 
 			print()
 			Logger.info("Running injections...\n")
@@ -66,6 +70,9 @@ class Scanner:
 			is_bool = self.boolean.test(url, param, context)
 			if is_bool:
 				Logger.success(f"Boolean based injection successful!")
+				db_name = self.extract.get_db_name(url, param, context, column_count)
+				if db_name:
+					Logger.success(f"Found database name: {YELLOW}{db_name}{RESET}!\n")
 			else:
 				Logger.failure(f"Boolean based injection unsuccessful")
 

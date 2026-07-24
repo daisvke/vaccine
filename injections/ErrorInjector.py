@@ -1,6 +1,6 @@
-from core.requester import Requester, HttpResponse
-from core.analyzer import Analyzer
-from utils.logger import Logger
+from core.Requester import Requester, HttpResponse
+from core.Analyzer import Analyzer
+from utils.Logger import Logger
 from utils.constants import InjectionContext
 
 class ErrorInjector:

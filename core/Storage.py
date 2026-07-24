@@ -1,6 +1,6 @@
 import json
 import os
-from utils.logger import Logger
+from utils.Logger import Logger
 
 
 class Storage:

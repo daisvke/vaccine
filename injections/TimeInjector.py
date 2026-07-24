@@ -1,5 +1,5 @@
-from core.analyzer import Analyzer
-from core.requester import Requester
+from core.Analyzer import Analyzer
+from core.Requester import Requester
 from utils.constants import InjectionContext
 
 class TimeInjector:

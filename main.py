@@ -1,13 +1,14 @@
-from core.requester import Requester
-from core.analyzer import Analyzer
-from core.scanner import Scanner
-from core.storage import Storage
-from injections.time import TimeInjector
+from core.Requester import Requester
+from core.Analyzer import Analyzer
+from core.Scanner import Scanner
+from core.Storage import Storage
+from extractor.BlindExtractor import BlindExtractor
+from injections.TimeInjector import TimeInjector
 from utils.parser import parse_args
-from injections.boolean import BooleanInjector
-from injections.error import ErrorInjector
-from injections.union import UnionInjector
-from utils.logger import Logger
+from injections.BooleanInjector import BooleanInjector
+from injections.ErrorInjector import ErrorInjector
+from injections.UnionInjector import UnionInjector
+from utils.Logger import Logger
 from utils.print import print_results
 
 
@@ -25,8 +26,9 @@ def main():
 	error = ErrorInjector(requester, analyzer)
 	union = UnionInjector(requester, analyzer)
 	time = TimeInjector(requester, analyzer)
+	extractor = BlindExtractor(boolean, union)
 
-	scanner = Scanner(requester, analyzer, boolean, error, union, time)
+	scanner = Scanner(requester, analyzer, boolean, error, union, time, extractor)
 
 	# Perform the tests on the URL
 	results = scanner.scan(args.url)

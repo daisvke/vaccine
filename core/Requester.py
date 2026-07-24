@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 import requests
 from dataclasses import dataclass
-from utils.logger import Logger
+from utils.Logger import Logger
 
 
 @dataclass

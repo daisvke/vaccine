@@ -1,6 +1,6 @@
 from urllib.parse import urlparse, parse_qs
 import argparse
-from utils.logger import Logger
+from utils.Logger import Logger
 
 
 def parse_args() -> argparse.Namespace:
