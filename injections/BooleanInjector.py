@@ -76,9 +76,14 @@ class BooleanInjector:
 
 		return low
 
-	def get_expressions_name(
+	def get_db_elem_name(
 		self, url: str, param: str, ctx: InjectionContext, expression: str, expr_name_len: int
     ) -> str:
+		"""
+		Return a database element's name after by checking the results of boolean blind tests.
+		This method uses binary search to find each character efficiently.
+  		"""
+  
 		expr_name = ""
 
 		# Baseline for a query containing a false condition. If another response differs from this,
@@ -110,7 +115,7 @@ class BooleanInjector:
 
 		return expr_name
 
-	def get_expressions_name_chars_at_index(
+	def get_db_elem_name_chars_at_index(
 		self,
   		url: str,
     	param: str,

