@@ -44,6 +44,19 @@ Enumerator
 Storage
 
 
+
+Get databases
+    |
+    +-- skip information_schema/mysql/performance_schema/sys
+    |
+    +-- for each remaining database:
+            |
+            +-- get tables from information_schema.tables
+            |       WHERE table_schema = <that database>
+            |
+            +-- get columns from information_schema.columns
+                    WHERE table_schema = <that database>
+
 ## Websites
 ```sh
 # Run docker

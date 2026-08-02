@@ -1,7 +1,7 @@
 from urllib.parse import urlparse, parse_qs
 import argparse
 from utils.Logger import Logger
-
+from utils.constants import SYSTEM_DATABASES
 
 def parse_args() -> argparse.Namespace:
 	p = argparse.ArgumentParser()
@@ -50,6 +50,7 @@ def parse_args() -> argparse.Namespace:
 
 	return p.parse_args()
 
+
 def extract_params(url: str) -> dict[str, list[str]]:
 	"""
 	Extracts the parameters from a URL.
@@ -60,3 +61,9 @@ def extract_params(url: str) -> dict[str, list[str]]:
 	parsed = parse_qs(query)
 
 	return parsed
+
+
+def is_system_db(database_name: str) -> bool:
+	if database_name.lower() in SYSTEM_DATABASES:
+		return True
+	return False

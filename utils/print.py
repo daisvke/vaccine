@@ -8,14 +8,69 @@ def status(value: bool) -> str:
 
 	return f"{RED}✗{RESET}"
 
+def print_table(table_name: str, columns: dict[str, list[str]]) -> None:
+	"""
+	Print a dumped table in a readable format.
+	"""
+
+	print(f"\nTable: {table_name}")
+
+	if not columns:
+		print("(empty)")
+		return
+
+	headers = list(columns.keys())
+	rows = max(len(values) for values in columns.values())
+
+	# Compute column widths
+	widths = []
+	for header in headers:
+		width = max(
+			len(header),
+			max((len(str(v)) for v in columns[header]), default=0)
+		)
+		widths.append(width)
+
+	# Separator
+	sep = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+
+	# Header
+	print(sep)
+	print(
+		"| "
+		+ " | ".join(
+			header.ljust(width)
+			for header, width in zip(headers, widths)
+		)
+		+ " |"
+	)
+	print(sep)
+
+	# Rows
+	for i in range(rows):
+		print(
+			"| "
+			+ " | ".join(
+				str(columns[header][i]).ljust(width)
+				if i < len(columns[header]) else " " * width
+				for header, width in zip(headers, widths)
+			)
+			+ " |"
+		)
+
+	print(sep)
 
 def print_results(results: list[dict]) -> None:
 	print()
 	Logger.success("Results:")
 
-	detected = 0
+	dump = {}
+
 	detected = sum(
-		r["boolean"]["detected"] + r["error"]["detected"] + r["union"]["detected"] + r["time"]["detected"]
+		r["boolean"]["detected"]
+		+ r["error"]["detected"]
+		+ r["union"]["detected"]
+		+ r["time"]["detected"]
 		for r in results
 	)
 
@@ -105,3 +160,24 @@ def print_results(results: list[dict]) -> None:
 		)
 
 		print("+-----------+----------+--------------------------------------------------------------+")
+
+		if result["db_dump"]:
+			dump = result["db_dump"]
+
+	if dump:
+		for db_name, tables in dump.items():
+			print(f"\nDatabase: {db_name}")
+
+			for table_name, columns in tables.items():
+				print_table(table_name, columns)
+
+def string_to_sql_char(value: str) -> str:
+	"""
+	Convert a string into a SQL CHAR() expression.
+
+	Example:
+	"abc" -> CHAR(97,98,99)
+	"""
+	ascii_values = ",".join(str(ord(char)) for char in value)
+
+	return f"CHAR({ascii_values})"

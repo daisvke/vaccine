@@ -29,8 +29,21 @@ class InjectionContext:
 Heigh values
 """
 
-HEIGH_NAME_LENGTH = 64
+HEIGH_ELEMENT_NAME_LENGTH = 64
+HEIGH_COL_VALUE_LENGTH = 1024
 HEIGH_ELEMENT_COUNT = 1000
+
+
+"""
+Skipped system schemas (which are )not user-created application databases).
+"""
+
+SYSTEM_DATABASES = {
+    "information_schema",
+    "mysql",
+    "performance_schema",
+    "sys",
+}
 
 
 """

