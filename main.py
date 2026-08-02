@@ -16,7 +16,7 @@ def main():
 	args = parse_args()
 
 	if args.debug:
-		Logger.DEBUG_ENABLED = True
+		Logger.DEBUG_ENABLED = False
 		Logger.success("Enabled debug mode")
 
 	requester = Requester(user_agent=args.agent)

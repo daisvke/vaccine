@@ -14,7 +14,7 @@ class HttpResponse:
 
 class Requester:
 	def __init__(
-		self, timeout: int=10, method: str="GET", user_agent: str|None=None
+		self, timeout: int=10, method: str="GET", user_agent: str | None=None
 	):
 		self.timeout = timeout
 		self.method = method.upper()

@@ -8,9 +8,9 @@ def status(value: bool) -> str:
 
 	return f"{RED}✗{RESET}"
 
-def print_table(table_name: str, columns: dict[str, list[str]]) -> None:
+def print_table(table_name: str, columns: dict) -> None:
 	"""
-	Print a dumped table in a readable format.
+	Print a dumped table with column metadata in headers.
 	"""
 
 	print(f"\nTable: {table_name}")
@@ -19,46 +19,67 @@ def print_table(table_name: str, columns: dict[str, list[str]]) -> None:
 		print("(empty)")
 		return
 
-	headers = list(columns.keys())
-	rows = max(len(values) for values in columns.values())
+	headers = []
+	values = {}
 
-	# Compute column widths
-	widths = []
-	for header in headers:
-		width = max(
-			len(header),
-			max((len(str(v)) for v in columns[header]), default=0)
+	for column_name, info in columns.items():
+		data_type = info.get("data_type", "unknown")
+		max_length = info.get("character_maximum_length")
+
+		meta = data_type
+		if max_length:
+			meta += f",{max_length}"
+
+		headers.append(f"{column_name} ({meta})")
+		values[column_name] = info.get("values", [])
+
+	row_count = max(
+		(len(v) for v in values.values()),
+		default=0
+	)
+
+	rows = []
+	for i in range(row_count):
+		rows.append([
+			str(values[col][i]) if i < len(values[col]) else ""
+			for col in columns
+		])
+
+	# Calculate widths
+	widths = [
+		max(
+			len(headers[i]),
+			max((len(row[i]) for row in rows), default=0)
 		)
-		widths.append(width)
+		for i in range(len(headers))
+	]
 
-	# Separator
-	sep = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+	separator = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
 
 	# Header
-	print(sep)
+	print(separator)
 	print(
 		"| "
 		+ " | ".join(
-			header.ljust(width)
-			for header, width in zip(headers, widths)
+			headers[i].ljust(widths[i])
+			for i in range(len(headers))
 		)
 		+ " |"
 	)
-	print(sep)
+	print(separator)
 
 	# Rows
-	for i in range(rows):
+	for row in rows:
 		print(
 			"| "
 			+ " | ".join(
-				str(columns[header][i]).ljust(width)
-				if i < len(columns[header]) else " " * width
-				for header, width in zip(headers, widths)
+				row[i].ljust(widths[i])
+				for i in range(len(row))
 			)
 			+ " |"
 		)
 
-	print(sep)
+	print(separator)
 
 def print_results(results: list[dict]) -> None:
 	print()

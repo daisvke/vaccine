@@ -73,7 +73,7 @@ class Scanner:
 			if not column_count:
 				Logger.error("Failed to get column count for the SQL query")
 				continue
-			Logger.success(f"Found column count: {YELLOW}{column_count}{RESET}")
+			Logger.success(f"Found the query's column count: {YELLOW}{column_count}{RESET}")
    
 
 			"""
@@ -98,7 +98,7 @@ class Scanner:
 			if is_bool:
 				Logger.success(f"Boolean based injection successful!")
 				if is_union:
-					do_dump = input("Do you want to perform a database dump? (y/n): ")
+					do_dump = input("\nDo you want to perform a database dump? (y/n): ")
 
 					if do_dump.lower() == "y":
 						# Create a NULL list matching the number of columns to make query compatible.

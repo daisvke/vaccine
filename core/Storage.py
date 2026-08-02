@@ -24,7 +24,10 @@ class Storage:
 	def save(self, data: dict) -> None:
 		try:
 			with open(self.filename, "r") as f:
-				existing = json.load(f)
+				try:
+					existing = json.load(f)
+				except json.JSONDecodeError:
+					existing = []
 
 			existing.append(data)
 
