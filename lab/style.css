@@ -1,0 +1,25 @@
+body {
+    font-family: sans-serif;
+    max-width: 800px;
+    margin: 40px auto;
+}
+
+section {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+label {
+    display: inline-block;
+    min-width: 100px;
+}
+
+input {
+    padding: 6px;
+    margin: 5px;
+}
+
+button {
+    padding: 6px 12px;
+}

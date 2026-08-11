@@ -31,6 +31,7 @@ class Requester:
 		params: dict[str, str] | None = None
 	) -> HttpResponse:
 		"""Send the HTTP request to the URL"""
+
 		try:
 			params = params or {}
 
@@ -52,4 +53,9 @@ class Requester:
 			
 		except requests.RequestException as e:
 			Logger.error(f"Request failed: {e}")
-			exit(1)
+			return HttpResponse(
+				status=0,
+				body="",
+				headers={},
+				elapsed=0
+			)

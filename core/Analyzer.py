@@ -34,7 +34,7 @@ class Analyzer:
 	def responses_differ(self, r1: HttpResponse, r2: HttpResponse, diff: int) -> bool:
 		# Logger.debug(r1.body)
 		# Logger.debug(r2.body)
-		# Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}")
+		# Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {diff}")
 
 		if r1.status != r2.status:
 			return True
@@ -57,12 +57,13 @@ class Analyzer:
 	def has_sql_error(self, response: HttpResponse):
 		errors = [
 			"mariadb",
-			"sql",
-			"mysql",
-			"sqlite",
+			"in your sql syntax",
+			"mysqli_sql_exception",
+			"unrecognized token",
 			"ora-",
 			"syntax error",
-			"warning",
+			"unterminated quoted string",
+			"unclosed quotation mark",
    			"the used select statements have a different number of columns",
       		"unknown column",
 		]

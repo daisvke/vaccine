@@ -47,7 +47,7 @@ class ErrorInjector:
 		If they do, it would mean that the injection has worked.
   		"""
   
-		payloads = ["'", '"', "'", "1' -- -", "1'"]
+		payloads = ["'", '"', "1' -- -", "1'"]
 		payloads_success = []  # payload which injection worked
 		database = None
 

