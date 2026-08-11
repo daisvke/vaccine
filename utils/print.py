@@ -96,9 +96,9 @@ def print_results(results: list[dict]) -> None:
 	)
 
 	if detected:
-		print(f"{RED}Found {detected} vulnerabilit{'ies' if detected > 1 else 'y'}!{RESET}")
+		print(f"{RED}Found {detected} SQL injection technique{'ies' if detected > 1 else 'y'}!{RESET}")
 	else:
-		print(f"{GREEN}No vulnerability found{RESET}")
+		print(f"{GREEN}No SQL injection technique found{RESET}")
 
 	def colored_detail(text: str, ok: bool, width: int) -> str:
 		color = GREEN if ok else RED

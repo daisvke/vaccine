@@ -35,10 +35,11 @@ class Scanner:
 			exit(0)
 		Logger.debug(f"params: {params}")
 
-		for param in params:
+		for param, value in params.items():
 			print()
-			Logger.info(f"---------- Testing parameter: `{param}` ----------\n")
-
+			Logger.info(
+       			f"---------- Testing parameter: `{param}` with value: `{value}` ----------\n"
+          	)
 			print()
 			Logger.info("Running injections...\n")
 
@@ -47,7 +48,7 @@ class Scanner:
 			Run an error based test
    			"""
 
-			payload, database = self.error.test(url, param)
+			payload, database = self.error.test(url, param, value)
 			is_error = True if payload else False
 			if is_error:
 				Logger.success(f"Error based injection successful!")
@@ -60,7 +61,7 @@ class Scanner:
    			"""
 
 			# Check if the parameter is quoted or unquoted in the DB query
-			context = self.error.detect_context(url, param)
+			context = self.error.detect_context(url, param, value)
 			Logger.success(f"Detected injection context: `{context.name}`")
    
    

@@ -51,16 +51,23 @@ def parse_args() -> argparse.Namespace:
 	return p.parse_args()
 
 
-def extract_params(url: str) -> dict[str, list[str]]:
+def extract_params(url: str) -> dict[str, str]:
 	"""
-	Extracts the parameters from a URL.
-	Ex.: `page` in `https://example.com?page=1`
+	Extract parameters and their first value from a URL.
+
+	Example:
+	https://example.com?page=1&user=admin
+	-> {"page": "1", "user": "admin"}
 	"""
 	query = urlparse(url).query
 	Logger.debug(f"------- query: {query}")
+
 	parsed = parse_qs(query)
 
-	return parsed
+	return {
+		param: values[0]
+		for param, values in parsed.items()
+	}
 
 
 def is_system_db(database_name: str) -> bool:
