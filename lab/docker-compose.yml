@@ -8,6 +8,8 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
 
   db:
     image: mariadb:11

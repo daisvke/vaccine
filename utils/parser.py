@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
         "--method",
         type=str,
         default="GET",
-        choices=["GET", "POST"],
+        choices=["GET", "POST", "PATCH", "PUT", "DELETE"],
         help="HTTP method",
     )
 

@@ -1,4 +1,4 @@
-import sys
+from sys import exit
 
 from core.Analyzer import Analyzer
 from core.Requester import Requester
@@ -15,6 +15,8 @@ from utils.parser import extract_params
 class Scanner:
     def __init__(
         self,
+        base_url: str,
+        method: str,
         requester: Requester,
         analyzer: Analyzer,
         boolean: BooleanInjector,
@@ -23,6 +25,8 @@ class Scanner:
         time: TimeInjector,
         extract: BlindExtractor,
     ):
+        self.base_url = base_url
+        self.method = method
         self.requester = requester
         self.analyzer = analyzer
         self.boolean = boolean
@@ -38,7 +42,7 @@ class Scanner:
 
         if params == {}:
             Logger.warning("No params found, exiting...")
-            sys.exit(0)
+            exit(0)
 
         for param, value in params.items():
             print()
@@ -125,11 +129,11 @@ class Scanner:
                     # We substract 1 from count because the main element is added afterwards
                     nulls = ",".join(["NULL"] * (column_count - 1))
                     db_dump = self.extract.dump_db_entries(
-                        url, param, context, column_count, nulls, False
+                        url, param, context, column_count, nulls, is_bool
                     )
 
             """
-            Print results
+            Gather results
             """
 
             self.results.append(
@@ -153,4 +157,11 @@ class Scanner:
                 }
             )
 
-        return self.results
+        
+        final_result = {
+            "url": self.base_url,
+            "method": self.method,
+            "results": self.results,
+        }
+
+        return final_result

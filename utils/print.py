@@ -28,7 +28,7 @@ def print_table(table_name: str, columns: dict) -> None:
         max_length = info.get("character_maximum_length")
 
         meta = data_type
-        if max_length:
+        if max_length is not None:
             meta += f",{max_length}"
 
         headers.append(f"{column_name} ({meta})")
@@ -68,11 +68,14 @@ def print_table(table_name: str, columns: dict) -> None:
     print(separator)
 
 
-def print_results(results: list[dict]) -> None:
+def print_results(data: dict) -> None:
     print()
     Logger.success("Results:")
 
     dump = {}
+
+    results = data.get("results", [])
+    method = data.get("method", "GET")
 
     detected = sum(
         r["boolean"]["detected"]
@@ -94,35 +97,44 @@ def print_results(results: list[dict]) -> None:
         return f"{color}{text.ljust(width)}{RESET}"
 
     print(
-        "+-----------+----------+--------------------------------------------------------------+"
+        "+-----------+--------+----------+--------------------------------------------------------------+"
     )
     print(
-        "| Parameter | Test     | Details                                                      |"
+        "| Parameter | Method | Test     | Details                                                      |"
     )
     print(
-        "+-----------+----------+--------------------------------------------------------------+"
+        "+-----------+--------+----------+--------------------------------------------------------------+"
     )
 
     for result in results:
-        param = result["param"]
+        param = result.get("param", "UNKNOWN")
+        boolean = result.get("boolean", {})
+        error = result.get("error", {})
+        union = result.get("union", {})
+        time = result.get("time", {})
+
+        bool_detected = boolean.get("detected", False)
+        error_detected = error.get("detected", False)
+        union_detected = union.get("detected", False)
+        time_detected = time.get("detected", False)
 
         """
 		BOOL
   		"""
         bool_detail = colored_detail(
-            "✓" if result["boolean"]["detected"] else "✗",
-            result["boolean"]["detected"],
+            "✓" if bool_detected else "✗",
+            bool_detected,
             60,
         )
 
         """
 		ERROR
   		"""
-        if result["error"]["detected"]:
+        if error_detected:
             # Create a string that lists all the working payloads
             payloads = ", ".join(payload for payload in result["error"]["payload"])
-
-            text = f"✓ {result['error']['database']} (payload(s): {payloads})"
+            database = error.get("database", "unknown")
+            text = f"✓ {database} (payload(s): {payloads})"
         else:
             text = "✗"
 
@@ -132,32 +144,27 @@ def print_results(results: list[dict]) -> None:
 		UNION
   		"""
         union_detail = colored_detail(
-            "✓" if result["union"]["detected"] else "✗", result["union"]["detected"], 60
+            "✓" if union_detected else "✗", union_detected, 60
         )
 
         """
 		TIME
   		"""
-        time_detail = colored_detail(
-            "✓" if result["time"]["detected"] else "✗", result["time"]["detected"], 60
-        )
+        time_detail = colored_detail("✓" if time_detected else "✗", time_detected, 60)
 
         """
 		Print each test
   		"""
-        print(f"| {param:<9} | {'Boolean':<8} | {bool_detail} |")
-
-        print(f"| {'':<9} | {'Error':<8} | {error_detail} |")
-
-        print(f"| {'':<9} | {'Union':<8} | {union_detail} |")
-
-        print(f"| {'':<9} | {'Time':<8} | {time_detail} |")
+        print(f"| {param:<9} | {method:<6} | {'Boolean':<8} | {bool_detail} |")
+        print(f"| {'':<9} | {'':<6} | {'Error':<8} | {error_detail} |")
+        print(f"| {'':<9} | {'':<6} | {'Union':<8} | {union_detail} |")
+        print(f"| {'':<9} | {'':<6} | {'Time':<8} | {time_detail} |")
 
         print(
-            "+-----------+----------+--------------------------------------------------------------+"
+            "+-----------+--------+----------+--------------------------------------------------------------+"
         )
 
-        if result["db_dump"]:
+        if result.get("db_dump"):
             dump = result["db_dump"]
 
     if dump:

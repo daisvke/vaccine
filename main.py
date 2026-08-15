@@ -1,3 +1,6 @@
+from sys import exit
+from urllib.parse import urlparse
+
 from core.Analyzer import Analyzer
 from core.Requester import Requester
 from core.Scanner import Scanner
@@ -19,7 +22,12 @@ def main():
         Logger.DEBUG_ENABLED = True
         Logger.success("Enabled debug mode")
 
-    requester = Requester(method=args.method, user_agent=args.agent)
+    base_url = urlparse(args.url)._replace(query="").geturl()
+
+    requester = Requester(base_url, method=args.method, user_agent=args.agent)
+    if not requester.validateUrl():  # Check if baseline URL is reachable
+        exit(1)
+
     analyzer = Analyzer()
     storage = Storage(args.output)
     boolean = BooleanInjector(requester, analyzer)
@@ -28,7 +36,17 @@ def main():
     time = TimeInjector(requester, analyzer)
     extractor = BlindExtractor(time, boolean, union)
 
-    scanner = Scanner(requester, analyzer, boolean, error, union, time, extractor)
+    scanner = Scanner(
+        base_url,
+        args.method,
+        requester,
+        analyzer,
+        boolean,
+        error,
+        union,
+        time,
+        extractor,
+    )
 
     # Perform the tests on the URL
     results = scanner.scan(args.url)

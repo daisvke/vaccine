@@ -10,7 +10,8 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 
 ## TO DO
 - Other methods (PATCH)
-- Other DB?
+- Other DB? Oracle? Microsoft SQL Server ? (test pages + code)
+- Video
 
 ---
 
@@ -302,6 +303,20 @@ Password: password
 After logging in, complete the initial DVWA setup and create the database using the **Create / Reset Database** button.
 
 > Keep vulnerable applications such as DVWA isolated from networks and systems you do not control.
+
+
+## Tester
+
+The project also includes a simple Bash script (`test.sh`) for running multiple test targets against Vaccine.
+
+Run it with:
+
+```sh
+chmod +x tester.sh
+./tester.sh
+```
+
+Add or uncomment entries in `TESTS` to test different endpoints and HTTP methods.
 
 ---
 

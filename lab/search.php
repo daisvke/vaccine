@@ -2,7 +2,7 @@
 
 require "config.php";
 
-$username = $_GET["username"];
+$username = $_GET["username"] ?? "";
 
 $sql =
 "SELECT id,username,password

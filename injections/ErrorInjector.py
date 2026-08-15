@@ -20,13 +20,13 @@ class ErrorInjector:
         """
 
         Logger.info("Context detection...")
-        response = self.requester.send(url, {param: f"{value}'"})
+        response = self.requester.send({param: f"{value}'"})
         # Logger.debug(response)
 
         if self.analyzer.has_sql_error(response):
             Logger.info("Detected SQL error message with quote in the parameter...")
 
-            response = self.requester.send(url, {param: f"{value}' -- -"})
+            response = self.requester.send({param: f"{value}' -- -"})
             if not self.analyzer.has_sql_error(response):
                 Logger.info(
                     "SQL error is avoided with commenting trailing characters..."
@@ -51,7 +51,7 @@ class ErrorInjector:
         database = None
 
         for p in payloads:
-            response = self.requester.send(url, {param: p})
+            response = self.requester.send({param: p})
             # Logger.debug(f"payload: {p}")
 
             if self.analyzer.has_sql_error(response):
