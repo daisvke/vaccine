@@ -1,6 +1,4 @@
-from enum import Enum
 from dataclasses import dataclass
-
 
 """
 Colors
@@ -17,6 +15,7 @@ BLUE = "\033[34m"
 """
 Injection context
 """
+
 
 @dataclass
 class InjectionContext:
