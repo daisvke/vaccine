@@ -86,7 +86,7 @@ class Scanner:
             We will need to have the same amount of columns in our query.
             """
 
-            column_count = self.union.find_column_count(url, param, value, context)
+            column_count = self.union.find_column_count(param, context)
             if not column_count:
                 Logger.error("Failed to get column count for the SQL query")
                 continue
@@ -98,7 +98,7 @@ class Scanner:
             Run a UNION based test
             """
 
-            is_union = self.union.test_marker(url, param, context, column_count)
+            is_union = self.union.test_marker(param, context, column_count)
             if is_union:
                 Logger.success("UNION based injection successful!")
                 # Logger.debug(tables)
@@ -109,7 +109,7 @@ class Scanner:
             Run a boolean based test
             """
 
-            is_bool = self.boolean.test(url, param, context)
+            is_bool = self.boolean.test(param, context)
             db_dump = {}
 
             if is_bool:
@@ -126,14 +126,13 @@ class Scanner:
             if database != "Unknown":
                 Logger.success(f"Detected database engine: {YELLOW}{database}{RESET}")
 
-
             """
             Run a time based test
             """
 
             # Time based injection needs a database delay function available in the DB engine
             if database != "Unknown" and fingerprints[database.lower()].sleep != "":
-                is_time = self.time.test(url, param, context)
+                is_time = self.time.test(param, context)
                 if is_time:
                     Logger.success("Time based injection successful!")
                 else:

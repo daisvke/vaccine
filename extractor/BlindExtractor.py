@@ -66,7 +66,7 @@ class BlindExtractor:
 
         # Test if we can get the element's name included in the injection's response body
         body_containing_name = self.union.test_expressions_name(
-            url, param, ctx, union_expression, column_count
+            param, ctx, union_expression, column_count
         )
 
         # Get the database element's name length
@@ -76,7 +76,7 @@ class BlindExtractor:
         )
 
         name_length = get_chars_at_index(
-            url, param, ctx, name_length_expression, max_length
+            param, ctx, name_length_expression, max_length
         )
 
         Logger.debug(
@@ -85,11 +85,11 @@ class BlindExtractor:
 
         # Better simply compute for each character if length is short
         if name_length < 5:
-            return get_name(url, param, ctx, expression, name_length)
+            return get_name(param, ctx, expression, name_length)
 
         if body_containing_name:
             # Find the first and the last character in the database element's name
-            first_last_chars = get_chars(url, param, ctx, expression, [1, name_length])
+            first_last_chars = get_chars(param, ctx, expression, [1, name_length])
 
             Logger.debug(
                 f"First char: {first_last_chars[0]}, last char: {first_last_chars[1]}"
@@ -117,7 +117,7 @@ class BlindExtractor:
                     corresponding_names: list[str] = []
 
                     second_and_one_before_last_chars = get_chars(
-                        url, param, ctx, expression, [2, name_length - 1]
+                        param, ctx, expression, [2, name_length - 1]
                     )
 
                     Logger.debug(
@@ -138,7 +138,7 @@ class BlindExtractor:
                         return corresponding_names[0]
                     # Compute each character to find out the whole name
 
-        return get_name(url, param, ctx, expression, name_length)
+        return get_name(param, ctx, expression, name_length)
 
     def dump_db_elem_entries(
         self,
@@ -172,7 +172,7 @@ class BlindExtractor:
         )
 
         db_elem_count = get_number(
-            url, param, ctx, db_elem_count_expression, HEIGH_ELEMENT_COUNT
+            param, ctx, db_elem_count_expression, HEIGH_ELEMENT_COUNT
         )
 
         Logger.success(f"Found {db_elem} count: {YELLOW}{db_elem_count}{RESET}")

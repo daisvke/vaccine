@@ -33,7 +33,7 @@ class UnionInjector:
         self.analyzer = analyzer
 
     def find_column_count(
-        self, url: str, param: str, value: str, ctx: InjectionContext
+        self, param: str, ctx: InjectionContext
     ) -> int | None:
         """Find the number of columns expected by the SQL query."""
 
@@ -74,7 +74,7 @@ class UnionInjector:
         return None
 
     def test_marker(
-        self, url: str, param: str, ctx: InjectionContext, column_count
+        self, param: str, ctx: InjectionContext, column_count
     ) -> bool:
         """
         Check if the marker we inject in the SQL query is printed back
@@ -95,7 +95,6 @@ class UnionInjector:
 
     def test_expressions_name(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,

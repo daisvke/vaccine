@@ -44,7 +44,7 @@ class BooleanInjector:
 
         return "Unknown"
 
-    def test(self, url: str, param: str, ctx: InjectionContext) -> bool:
+    def test(self, param: str, ctx: InjectionContext) -> bool:
         """
         Test for boolean-based SQL injection.
 
@@ -59,7 +59,7 @@ class BooleanInjector:
         return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
 
     def get_number_returned_by_sql(
-        self, url: str, param: str, ctx: InjectionContext, expression: str, high: int
+        self, param: str, ctx: InjectionContext, expression: str, high: int
     ) -> int:
         """
         Find the number returned by SQL query by using binary search
@@ -95,7 +95,6 @@ class BooleanInjector:
 
     def get_db_elem_name(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -138,7 +137,6 @@ class BooleanInjector:
 
     def get_db_elem_name_chars_at_index(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,

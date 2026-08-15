@@ -16,7 +16,7 @@ class TimeInjector:
         self.analyzer = analyzer
 
     def test(
-        self, url: str, param: str, ctx: InjectionContext, sleep: float = 1.0
+        self, param: str, ctx: InjectionContext, sleep: float = 1.0
     ) -> bool:
         """
         Test for time-based SQL injection.
@@ -39,7 +39,6 @@ class TimeInjector:
 
     def get_number_returned_by_sql(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -83,7 +82,6 @@ class TimeInjector:
 
     def get_db_elem_name(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
@@ -138,7 +136,6 @@ class TimeInjector:
 
     def get_db_elem_name_chars_at_index(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
