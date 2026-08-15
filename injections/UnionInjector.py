@@ -1,7 +1,6 @@
-from core.Requester import HttpResponse, Requester
 from core.Analyzer import Analyzer
-from utils.constants import InjectionContext, DIFFER_LENGTH_COL_COUNT, DIFF_MARKER
-from utils.Logger import Logger
+from core.Requester import Requester
+from utils.constants import DIFF_MARKER, DIFFER_LENGTH_COL_COUNT, InjectionContext
 
 
 class UnionInjector:
@@ -33,7 +32,9 @@ class UnionInjector:
 		self.requester = requester
 		self.analyzer = analyzer
 
-	def find_column_count(self, url: str, param: str, ctx: InjectionContext) -> int | None:
+	def find_column_count(
+     	self, url: str, param: str, value: str, ctx: InjectionContext
+    ) -> int | None:
 		"""Find the number of columns expected by the SQL query."""
 
 		# Get a baseline to which we will compare the other response bodies
@@ -41,6 +42,8 @@ class UnionInjector:
 			url,
 			{param: ctx.prefix + ctx.suffix}
 		)
+
+		# Logger.debug(f"query: {ctx.prefix + ctx.suffix}, Baseline response: {baseline.body}")
 
 		"""
 		Try UNION SELECT statements with an increasing number of NULL values.
@@ -99,9 +102,7 @@ class UnionInjector:
 		)
 
 		# Logger.debug(response.body)
-		if DIFF_MARKER not in response.body:
-			return False
-		return True
+		return DIFF_MARKER in response.body
 
 	def test_expressions_name(
      	self, url: str, param: str, ctx: InjectionContext, expression: str, column_count: int

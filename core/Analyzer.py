@@ -1,78 +1,70 @@
 from core.Requester import HttpResponse
 from utils.Logger import Logger
 
-
 DATABASE_ERRORS = {
-	"Microsoft SQL Server": [
-		"unclosed quotation mark",
-		"microsoft sql server",
-		"sql server"
-	],
-
-	"MariaDB": [
-		"mariadb"
-	],
-
-	"MySQL": [
-		"you have an error in your sql syntax",
-		"mysql"
-	],
-
-	"SQLite": [
-		"sqlite",
-		"sqlite3::"
-	],
-
-	"Oracle": [
-		"ora-",
-		"oracle error"
-	],
+    "Microsoft SQL Server": [
+        "unclosed quotation mark",
+        "microsoft sql server",
+        "sql server",
+    ],
+    "MariaDB": ["mariadb"],
+    "MySQL": ["you have an error in your sql syntax", "mysql"],
+    "SQLite": ["sqlite", "sqlite3::"],
+    "Oracle": ["ora-", "oracle error"],
 }
 
 
 class Analyzer:
-	def responses_differ(self, r1: HttpResponse, r2: HttpResponse, diff: int) -> bool:
-		# Logger.debug(r1.body)
-		# Logger.debug(r2.body)
-		# Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {diff}")
+    def responses_differ(self, r1: HttpResponse, r2: HttpResponse, diff: int) -> bool:
+        # Logger.debug(r1.body)
+        # Logger.debug(r2.body)
+        # Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {diff}")
 
-		if r1.status != r2.status:
-			return True
+        if r1.status != r2.status:
+            return True
 
-		if abs(len(r1.body) - len(r2.body)) > diff:
-			return True
+        return abs(len(r1.body) - len(r2.body)) > diff
 
-		return False
+    def detect_database(self, response_body: str) -> str:
+        body = response_body.lower()
 
-	def detect_database(self, response_body: str) -> str:
-		body = response_body.lower()
+        for database, signatures in DATABASE_ERRORS.items():
+            for signature in signatures:
+                if signature in body:
+                    return database
 
-		for database, signatures in DATABASE_ERRORS.items():
-			for signature in signatures:
-				if signature in body:
-					return database
+        return "Unknown"
 
-		return "Unknown"
+    def has_sql_error(self, response: HttpResponse):
+        errors = [
+            "mariadb",
+            "in your sql syntax",
+            "mysqli_sql_exception",
+            "unrecognized token",
+            "ora-",
+            "syntax error",
+            "unterminated quoted string",
+            "unclosed quotation mark",
+            "the used select statements have a different number of columns",
+            "unknown column",
+        ]
 
-	def has_sql_error(self, response: HttpResponse):
-		errors = [
-			"mariadb",
-			"in your sql syntax",
-			"mysqli_sql_exception",
-			"unrecognized token",
-			"ora-",
-			"syntax error",
-			"unterminated quoted string",
-			"unclosed quotation mark",
-   			"the used select statements have a different number of columns",
-      		"unknown column",
-		]
+        body = response.body.lower()
+        # 		Logger.debug(f"body: {body}")
+        return any(e in body for e in errors)
 
-		body = response.body.lower()
-#		Logger.debug(f"body: {body}")
-		return any(e in body for e in errors)
-			
-	def is_delayed(self, r_normal: HttpResponse, r_sleep: HttpResponse, sleep: int):
-		return (
-			r_sleep.elapsed - r_normal.elapsed >= sleep - 0.5
-		)
+    def is_delayed(
+        self,
+        normal: HttpResponse,
+        delayed: HttpResponse,
+        sleep: float = 1.0,
+    ) -> bool:
+        delay = delayed.elapsed - normal.elapsed
+
+        Logger.debug(
+            f"Response time: normal={normal.elapsed:.3f}s, "
+            f"test={delayed.elapsed:.3f}s, "
+            f"difference={delay:.3f}s"
+        )
+
+        return delay >= sleep * 0.8

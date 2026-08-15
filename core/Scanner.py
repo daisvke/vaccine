@@ -1,153 +1,156 @@
-from utils.constants import HEIGH_ELEMENT_COUNT, RESET, YELLOW
-from utils.parser import extract_params
-from core.Requester import Requester
+import sys
+
 from core.Analyzer import Analyzer
+from core.Requester import Requester
 from extractor.BlindExtractor import BlindExtractor
 from injections.BooleanInjector import BooleanInjector
 from injections.ErrorInjector import ErrorInjector
-from injections.UnionInjector import UnionInjector
 from injections.TimeInjector import TimeInjector
+from injections.UnionInjector import UnionInjector
+from utils.constants import RESET, YELLOW
 from utils.Logger import Logger
+from utils.parser import extract_params
 
 
 class Scanner:
-	def __init__(self,
-			requester: Requester, analyzer: Analyzer,
-			boolean: BooleanInjector, error: ErrorInjector,
-   			union: UnionInjector, time: TimeInjector,
-			extract: BlindExtractor,
-		):
-		self.requester = requester
-		self.analyzer = analyzer
-		self.boolean = boolean
-		self.error = error
-		self.union = union
-		self.time = time
-		self.extract = extract
-  
-		self.results: list = []
+    def __init__(
+        self,
+        requester: Requester,
+        analyzer: Analyzer,
+        boolean: BooleanInjector,
+        error: ErrorInjector,
+        union: UnionInjector,
+        time: TimeInjector,
+        extract: BlindExtractor,
+    ):
+        self.requester = requester
+        self.analyzer = analyzer
+        self.boolean = boolean
+        self.error = error
+        self.union = union
+        self.time = time
+        self.extract = extract
 
-	def scan(self, url: str):
-		params = extract_params(url)
+        self.results: list = []
 
-		if params == {}:
-			Logger.warning("No params found, exiting...")
-			exit(0)
-		Logger.debug(f"params: {params}")
+    def scan(self, url: str):
+        params = extract_params(url)
 
-		for param, value in params.items():
-			print()
-			Logger.info(
-       			f"---------- Testing parameter: `{param}` with value: `{value}` ----------\n"
-          	)
-			print()
-			Logger.info("Running injections...\n")
+        if params == {}:
+            Logger.warning("No params found, exiting...")
+            sys.exit(0)
 
+        for param, value in params.items():
+            print()
+            Logger.info(
+                f"---------- Testing parameter: `{param}` with value: `{value}` ----------\n"
+            )
+            print()
+            Logger.info("Running injections...\n")
 
-			"""
-			Run an error based test
-   			"""
+            """
+            Run an error based test
+            """
 
-			payload, database = self.error.test(url, param, value)
-			is_error = True if payload else False
-			if is_error:
-				Logger.success(f"Error based injection successful!")
-			else:
-				Logger.failure(f"Error based injection unsuccessful")
+            payload, database = self.error.test(url, param, value)
+            is_error = bool(payload)
+            if is_error:
+                Logger.success("Error based injection successful!")
+            else:
+                Logger.failure("Error based injection unsuccessful")
 
+            """
+            Detect context (check how the target SQL query is formed)
+            """
 
-			"""
-			Detect context (check how the target SQL query is formed)
-   			"""
+            # Check if the parameter is quoted or unquoted in the DB query
+            context = self.error.detect_context(url, param, value)
+            Logger.success(f"Detected injection context: `{context.name}`")
 
-			# Check if the parameter is quoted or unquoted in the DB query
-			context = self.error.detect_context(url, param, value)
-			Logger.success(f"Detected injection context: `{context.name}`")
-   
-   
-			"""
-			Determine how many columns are expected by the query.
-   			We will need to have the same amount of columns in our query.
-   			"""
+            """
+            Determine how many columns are expected by the query.
+            We will need to have the same amount of columns in our query.
+            """
 
-			column_count = self.union.find_column_count(url, param, context)
-			if not column_count:
-				Logger.error("Failed to get column count for the SQL query")
-				continue
-			Logger.success(f"Found the query's column count: {YELLOW}{column_count}{RESET}")
-   
+            column_count = self.union.find_column_count(url, param, value, context)
+            if not column_count:
+                Logger.error("Failed to get column count for the SQL query")
+                continue
+            Logger.success(
+                f"Found the query's column count: {YELLOW}{column_count}{RESET}"
+            )
 
-			"""
-			Run a UNION based test
-   			"""
+            """
+            Run a UNION based test
+            """
 
-			is_union = self.union.test_marker(url, param, context, column_count)
-			if is_union:
-				Logger.success(f"UNION based injection successful!")
-				# Logger.debug(tables)
-			else:
-				Logger.failure(f"UNION based injection unsuccessful")
+            is_union = self.union.test_marker(url, param, context, column_count)
+            if is_union:
+                Logger.success("UNION based injection successful!")
+                # Logger.debug(tables)
+            else:
+                Logger.failure("UNION based injection unsuccessful")
 
+            """
+            Run a boolean based test
+            """
 
-			"""
-			Run a boolean based test
-   			"""
+            is_bool = self.boolean.test(url, param, context)
+            db_dump = {}
 
-			is_bool = self.boolean.test(url, param, context)
-			db_dump = {}
+            if is_bool:
+                Logger.success("Boolean based injection successful!")
+            else:
+                Logger.failure("Boolean based injection unsuccessful")
 
-			if is_bool:
-				Logger.success(f"Boolean based injection successful!")
-				if is_union:
-					do_dump = input("\nDo you want to perform a database dump? (y/n): ")
+            """
+            Run a time based test
+            """
 
-					if do_dump.lower() == "y":
-						# Create a NULL list matching the number of columns to make query compatible.
-						# We substract 1 from count because the main element is added afterwards 
-						nulls = ",".join(["NULL"] * (column_count - 1))
-						db_dump = self.extract.dump_db_entries(url, param, context, column_count, nulls)
+            is_time = self.time.test(url, param, context)
+            if is_time:
+                Logger.success("Time based injection successful!")
+            else:
+                Logger.failure("Time based injection unsuccessful")
 
-			else:
-				Logger.failure(f"Boolean based injection unsuccessful")
+            """
+            Dump databases
+            """
 
+            if is_union and (is_time or is_bool):
+                do_dump = input("\nDo you want to perform a database dump? (y/n): ")
 
-			"""
-			Run a time based test
-   			"""
+                if do_dump.lower() == "y":
+                    # Create a NULL list matching the number of columns to make query compatible.
+                    # We substract 1 from count because the main element is added afterwards
+                    nulls = ",".join(["NULL"] * (column_count - 1))
+                    db_dump = self.extract.dump_db_entries(
+                        url, param, context, column_count, nulls, False
+                    )
 
-			is_time = self.time.test(url, param, context)
-			if is_time:
-				Logger.success(f"Time based injection successful!")
-			else:
-				Logger.failure(f"Time based injection unsuccessful")
+            """
+            Print results
+            """
 
+            self.results.append(
+                {
+                    "param": param,
+                    "boolean": {
+                        "detected": is_bool,
+                    },
+                    "error": {
+                        "detected": is_error,
+                        "payload": payload,
+                        "database": database,
+                    },
+                    "union": {
+                        "detected": is_union,
+                    },
+                    "time": {
+                        "detected": is_time,
+                    },
+                    "db_dump": db_dump,
+                }
+            )
 
-			"""
-			Print results
-   			"""
-
-			self.results.append({
-				"param": param,
-
-				"boolean": {
-					"detected": is_bool,
-				},
-
-				"error": {
-					"detected": is_error,
-					"payload": payload,
-					"database": database,
-				},
-
-				"union": {
-					"detected": is_union,
-				},
-    
-				"time": {
-					"detected": is_time,
-				},
-    
-				"db_dump": db_dump
-			})
-
-		return self.results
+        return self.results

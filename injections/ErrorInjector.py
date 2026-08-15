@@ -1,64 +1,62 @@
-from core.Requester import Requester, HttpResponse
 from core.Analyzer import Analyzer
-from utils.Logger import Logger
+from core.Requester import Requester
 from utils.constants import InjectionContext
+from utils.Logger import Logger
+
 
 class ErrorInjector:
-	"""
-	Error SQLi relies on database error messages.
- 	"""
- 
-	def __init__(self, requester: Requester, analyzer: Analyzer):
-		self.requester = requester
-		self.analyzer = analyzer
+    """
+    Error SQLi relies on database error messages.
+    """
 
-	def detect_context(self, url, param, value):
-		"""
-		Determine the prefix and suffix of our SQL queries according to the
-		way the target query is formed.
-  		"""
-  
-		Logger.info("Context detection...")
-		response = self.requester.send(url, {param: f"{value}'"})
-		#Logger.debug(response)
+    def __init__(self, requester: Requester, analyzer: Analyzer):
+        self.requester = requester
+        self.analyzer = analyzer
 
-		if self.analyzer.has_sql_error(response):
-			Logger.info("Detected SQL error message with quote in the parameter...")
-   
-			response = self.requester.send(url, {param: f"{value}' -- -"})
-			if not self.analyzer.has_sql_error(response):
-				Logger.info("SQL error is avoided with commenting trailing characters...")
+    def detect_context(self, url, param, value):
+        """
+        Determine the prefix and suffix of our SQL queries according to the
+        way the target query is formed.
+        """
 
-				return InjectionContext(
-					prefix=f"{value}' ",
-					suffix=" -- -",
-					name="quoted"
-				)
+        Logger.info("Context detection...")
+        response = self.requester.send(url, {param: f"{value}'"})
+        # Logger.debug(response)
 
-		return InjectionContext(
-			prefix=f"{value} ",
-			suffix="",
-			name="unquoted"
-		)
+        if self.analyzer.has_sql_error(response):
+            Logger.info("Detected SQL error message with quote in the parameter...")
 
-	def test(self, url: str, param: str, value: str) -> tuple[list[str] | None, str | None]:
-		"""
-		Test the different payloads to check if they produce SQL error messages.
-		If they do, it would mean that the injection has worked.
-  		"""
-  
-		payloads = ["'", '"', f"{value}' -- -", f"{value}'"]
-		payloads_success = []  # payload which injection worked
-		database = None
+            response = self.requester.send(url, {param: f"{value}' -- -"})
+            if not self.analyzer.has_sql_error(response):
+                Logger.info(
+                    "SQL error is avoided with commenting trailing characters..."
+                )
 
-		for p in payloads:
-			response = self.requester.send(url, {param: p})
-			# Logger.debug(f"payload: {p}")
+                return InjectionContext(
+                    prefix=f"{value}' ", suffix=" -- -", name="quoted"
+                )
 
-			if self.analyzer.has_sql_error(response):
-				if not database:
-					database = self.analyzer.detect_database(response.body)
-				payloads_success.append(p)
+        return InjectionContext(prefix=f"{value} ", suffix="", name="unquoted")
 
-		return payloads_success, database
+    def test(
+        self, url: str, param: str, value: str
+    ) -> tuple[list[str] | None, str | None]:
+        """
+        Test the different payloads to check if they produce SQL error messages.
+        If they do, it would mean that the injection has worked.
+        """
 
+        payloads = ["'", '"', f"{value}' -- -", f"{value}'"]
+        payloads_success = []  # payload which injection worked
+        database = None
+
+        for p in payloads:
+            response = self.requester.send(url, {param: p})
+            # Logger.debug(f"payload: {p}")
+
+            if self.analyzer.has_sql_error(response):
+                if not database:
+                    database = self.analyzer.detect_database(response.body)
+                payloads_success.append(p)
+
+        return payloads_success, database
