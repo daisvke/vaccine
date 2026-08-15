@@ -1,14 +1,18 @@
 import argparse
 from urllib.parse import parse_qs, urlparse
 
-from utils.constants import SYSTEM_DATABASES
-
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
 
     # Target URL
-    p.add_argument("url", type=str, help="Target URL")
+    p.add_argument(
+        "url",
+        type=str,
+        help="Target URL with its parameters."
+        "All methods need its data given in the form of valid parameters and values."
+        "Example: http://localhost:8080/user.php?id=1",
+    )
 
     # Method used by the request
     p.add_argument(
@@ -47,7 +51,3 @@ def extract_params(url: str) -> dict[str, str]:
     parsed = parse_qs(query)
 
     return {param: values[0] for param, values in parsed.items()}
-
-
-def is_system_db(database_name: str) -> bool:
-    return database_name.lower() in SYSTEM_DATABASES

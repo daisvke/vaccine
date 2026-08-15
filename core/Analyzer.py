@@ -37,16 +37,25 @@ class Analyzer:
 
     def has_sql_error(self, response: HttpResponse):
         errors = [
-            "mariadb",
-            "in your sql syntax",
-            "mysqli_sql_exception",
             "unrecognized token",
             "ora-",
+
+            # mysql/mariadb
+            "in your sql syntax",
+            "mariadb",
+            "mysqli_sql_exception",
+            "unknown column",
+            "different number of columns",
+
             "syntax error",
             "unterminated quoted string",
             "unclosed quotation mark",
-            "the used select statements have a different number of columns",
-            "unknown column",
+
+            # pdo sqlite
+            "pdoexception",
+            "general error",
+            "no such function",
+            "number of result columns",
         ]
 
         body = response.body.lower()

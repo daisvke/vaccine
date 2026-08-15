@@ -1,6 +1,6 @@
 <?php
 
-require "config.php";
+require "config-mariadb.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "PATCH"
     && $_SERVER["REQUEST_METHOD"] !== "PUT"

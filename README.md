@@ -9,7 +9,6 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 ---
 
 ## TO DO
-- Other methods (PATCH)
 - Other DB? Oracle? Microsoft SQL Server ? (test pages + code)
 - Video
 
@@ -29,14 +28,14 @@ Then run the CLI according to the project's entry point.
 Usage:
 
 ```
-main.py [-h] [-X {GET,POST}] [-o OUTPUT] [-D] [-A AGENT] url
+main.py [-h] [-X {GET,POST,PATCH,PUT,DELETE}] [-o OUTPUT] [-D] [-A AGENT] url
 
 positional arguments:
   url                   Target URL
 
 options:
   -h, --help            show this help message and exit
-  -X, --method {GET,POST}
+  -X, --method {GET,POST,PATCH,PUT,DELETE}
                         HTTP method
   -o, --output OUTPUT   Output file
   -D, --debug           Enable debug mode
@@ -67,7 +66,7 @@ Vaccine supports several SQL injection techniques:
 ## Current limitations
 
 * No authentication/login handling.
-* Primarily designed for GET and POST parameters.
+* Designed for GET, POST, PUT, PATCH, and DELETE parameters.
 * Database enumeration currently relies on MySQL/MariaDB-compatible `information_schema` metadata.
 * Time-based detection is sensitive to network and server latency.
 * Enumeration capabilities depend on the privileges available to the database user.
@@ -239,7 +238,7 @@ The lab is available at:
 http://localhost:8080
 ```
 
-Open `http://localhost:8080/` to access the test page. It provides vulnerable GET and POST parameters for testing different SQL injection contexts and techniques.
+Open `http://localhost:8080/` to access the test page. It provides vulnerable parameters for testing different SQL injection contexts and techniques.
 
 To stop the lab:
 

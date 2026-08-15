@@ -1,6 +1,6 @@
 from core.Analyzer import Analyzer
 from core.Requester import Requester
-from utils.constants import InjectionContext
+from utils.constants import InjectionContext, fingerprints
 from utils.Logger import Logger
 
 
@@ -13,7 +13,7 @@ class ErrorInjector:
         self.requester = requester
         self.analyzer = analyzer
 
-    def detect_context(self, url, param, value):
+    def detect_context(self, param, value):
         """
         Determine the prefix and suffix of our SQL queries according to the
         way the target query is formed.
@@ -38,9 +38,24 @@ class ErrorInjector:
 
         return InjectionContext(prefix=f"{value} ", suffix="", name="unquoted")
 
-    def test(
-        self, url: str, param: str, value: str
-    ) -> tuple[list[str] | None, str | None]:
+    def detect_database_engine(self, param: str, ctx: InjectionContext) -> str:
+        """
+        Detect the database engine by testing engine-specific version
+        expressions and checking whether the resulting query produces
+        an SQL error.
+
+        ***This method should only be used if the error injection test has succeeded.
+        """
+        for engine, fingerprint in fingerprints.items():
+            payload = f"{ctx.prefix}AND {fingerprint.version} IS NOT NULL{ctx.suffix}"
+            response = self.requester.send({param: payload})
+
+            if not self.analyzer.has_sql_error(response):
+                return engine
+
+        return "Unknown"
+
+    def test(self, param: str, value: str) -> tuple[list[str] | None, str]:
         """
         Test the different payloads to check if they produce SQL error messages.
         If they do, it would mean that the injection has worked.
@@ -59,4 +74,4 @@ class ErrorInjector:
                     database = self.analyzer.detect_database(response.body)
                 payloads_success.append(p)
 
-        return payloads_success, database
+        return payloads_success, (database or "Unknown")

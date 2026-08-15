@@ -1,13 +1,13 @@
 <?php
 
-require "config.php";
+require "config-mariadb.php";
 
-$id = $_POST["id"] ?? "";
+$id = $_GET["id"];
 
 $sql =
-"SELECT *
-FROM products
-WHERE id=$id";
+"SELECT id,username,password
+FROM users
+WHERE id = $id";
 
 echo "<pre>";
 echo "SQL:\n$sql\n\n";

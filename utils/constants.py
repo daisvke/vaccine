@@ -34,14 +34,38 @@ HEIGH_ELEMENT_COUNT = 1000
 
 
 """
-Skipped system schemas (which are )not user-created application databases).
+Fingerprints of database engines
 """
 
-SYSTEM_DATABASES = {
-    "information_schema",
-    "mysql",
-    "performance_schema",
-    "sys",
+
+@dataclass(frozen=True)
+class DatabaseFingerprint:
+    schema: str
+    version: str
+    sleep: str | None
+
+
+fingerprints = {
+    "sqlite": DatabaseFingerprint(
+        schema="sqlite_master",
+        version="sqlite_version()",
+        sleep=None,
+    ),
+    "mysql_mariadb": DatabaseFingerprint(
+        schema="information_schema",
+        version="VERSION()",
+        sleep="SLEEP({seconds})",  # Usage: `fingerprint.sleep.format(seconds=1)`
+    ),
+    "mariadb": DatabaseFingerprint(
+        schema="information_schema",
+        version="VERSION()",
+        sleep="SLEEP({seconds})",
+    ),
+    "mssql": DatabaseFingerprint(
+        schema="sys.tables",
+        version="@@VERSION",
+        sleep=None,
+    ),
 }
 
 

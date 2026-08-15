@@ -7,7 +7,7 @@ from injections.BooleanInjector import BooleanInjector
 from injections.ErrorInjector import ErrorInjector
 from injections.TimeInjector import TimeInjector
 from injections.UnionInjector import UnionInjector
-from utils.constants import RESET, YELLOW
+from utils.constants import RESET, YELLOW, fingerprints
 from utils.Logger import Logger
 from utils.parser import extract_params
 
@@ -56,7 +56,8 @@ class Scanner:
             Run an error based test
             """
 
-            payload, database = self.error.test(url, param, value)
+            payload, database = self.error.test(param, value)
+
             is_error = bool(payload)
             if is_error:
                 Logger.success("Error based injection successful!")
@@ -68,8 +69,17 @@ class Scanner:
             """
 
             # Check if the parameter is quoted or unquoted in the DB query
-            context = self.error.detect_context(url, param, value)
+            context = self.error.detect_context(param, value)
             Logger.success(f"Detected injection context: `{context.name}`")
+
+            """
+            Detect database (Error Injector)
+            """
+
+            if database == "Unknown" and is_error:
+                database = self.error.detect_database_engine(param, context)
+            if database != "Unknown":
+                Logger.success(f"Detected database engine: {YELLOW}{database}{RESET}")
 
             """
             Determine how many columns are expected by the query.
@@ -108,14 +118,31 @@ class Scanner:
                 Logger.failure("Boolean based injection unsuccessful")
 
             """
+            Detect database (Boolean Injector)
+            """
+
+            if database == "Unknown" and is_error:
+                database = self.boolean.detect_database_engine(param, context)
+            if database != "Unknown":
+                Logger.success(f"Detected database engine: {YELLOW}{database}{RESET}")
+
+
+            """
             Run a time based test
             """
 
-            is_time = self.time.test(url, param, context)
-            if is_time:
-                Logger.success("Time based injection successful!")
+            # Time based injection needs a database delay function available in the DB engine
+            if database != "Unknown" and fingerprints[database.lower()].sleep != "":
+                is_time = self.time.test(url, param, context)
+                if is_time:
+                    Logger.success("Time based injection successful!")
+                else:
+                    Logger.failure("Time based injection unsuccessful")
             else:
-                Logger.failure("Time based injection unsuccessful")
+                is_time = False
+                Logger.failure(
+                    "Time-based injection skipped: no supported database delay function available"
+                )
 
             """
             Dump databases
@@ -157,7 +184,6 @@ class Scanner:
                 }
             )
 
-        
         final_result = {
             "url": self.base_url,
             "method": self.method,
