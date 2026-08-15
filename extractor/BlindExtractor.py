@@ -27,9 +27,9 @@ class BlindExtractor:
         self.union = union
 
     def find_words(self, body: str, start: str, end: str, length: int) -> list[str]:
-        """Find words corresponding to a Regex in a given text"""
+        """Find unique words matching a regex in the given text."""
         pattern = rf"\b{start}\w{{{length - 2}}}{end}\b"
-        return findall(pattern, body)
+        return list(dict.fromkeys(findall(pattern, body)))
 
     def find_db_elem_name(
         self,

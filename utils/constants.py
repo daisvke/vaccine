@@ -34,6 +34,18 @@ HEIGH_ELEMENT_COUNT = 1000
 
 
 """
+Skipped system schemas (which are )not user-created application databases).
+"""
+
+SYSTEM_DATABASES = {
+    "information_schema",
+    "mysql",
+    "performance_schema",
+    "sys",
+}
+
+
+"""
 Fingerprints of database engines
 """
 

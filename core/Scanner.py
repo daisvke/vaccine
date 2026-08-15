@@ -131,8 +131,8 @@ class Scanner:
             """
 
             # Time based injection needs a database delay function available in the DB engine
-            if database != "Unknown" and fingerprints[database.lower()].sleep != "":
-                is_time = self.time.test(param, context)
+            if database != "Unknown" and fingerprints[database.lower()].sleep:
+                is_time = self.time.test(database, param, context)
                 if is_time:
                     Logger.success("Time based injection successful!")
                 else:
