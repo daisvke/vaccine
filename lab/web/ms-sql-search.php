@@ -1,6 +1,6 @@
 <?php
 
-require "config-mssql.php";
+require "config/config-mssql.php";
 
 $username = $_GET["username"] ?? "";
 

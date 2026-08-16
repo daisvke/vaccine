@@ -5,7 +5,7 @@
  * docker compose exec web php /var/www/html/init-sqlite.php
  */
 
-require "config-sqlite.php";
+require "config/config-sqlite.php";
 
 $conn->exec("
     CREATE TABLE IF NOT EXISTS users (

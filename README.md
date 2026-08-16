@@ -12,7 +12,6 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 - Other DB?
   - Oracle? Microsoft SQL Server ?
 - Video
-- results viewer mode with result ID (add ID in JSON)
 
 ---
 
@@ -30,13 +29,14 @@ Then run the CLI according to the project's entry point.
 Usage:
 
 ```
-main.py [-h] [-X {GET,POST,PATCH,PUT,DELETE}] [-o OUTPUT] [-D] [-A AGENT] url
+main.py [-h] [-V VIEW] [-X {GET,POST,PATCH,PUT,DELETE}] [-o OUTPUT] [-D] [-A AGENT] [url]
 
 positional arguments:
-  url                   Target URL
+  url                   Target URL with its parameters.All methods need its data given in the form of valid parameters and values.Example: http://localhost:8080/user.php?id=1
 
 options:
   -h, --help            show this help message and exit
+  -V, --view VIEW       View the formatted results with the given result ID
   -X, --method {GET,POST,PATCH,PUT,DELETE}
                         HTTP method
   -o, --output OUTPUT   Output file

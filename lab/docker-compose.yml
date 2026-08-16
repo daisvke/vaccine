@@ -1,11 +1,12 @@
 services:
   web:
-    build: ./web
+    build:
+      context: ./web
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     depends_on:
       - mariadb
-      # - mssql
     restart: unless-stopped
     volumes:
       - ./web:/var/www/html
@@ -21,17 +22,8 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/database.sql:ro
+      - ./db/init-mariadb.sql:/docker-entrypoint-initdb.d/database.sql:ro
       - db_data:/var/lib/mysql
-
-  # mssql:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   environment:
-  #     ACCEPT_EULA: "Y"
-  #     MSSQL_SA_PASSWORD: "YourStrongPassword123!"
-  #   ports:
-  #     - "1433:1433"
 
 volumes:
   db_data:
-  

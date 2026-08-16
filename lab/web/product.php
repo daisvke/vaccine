@@ -1,6 +1,6 @@
 <?php
 
-require "config-mariadb.php";
+require "config/config-mariadb.php";
 
 $id = $_POST["id"] ?? "";
 

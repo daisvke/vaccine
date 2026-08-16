@@ -1,6 +1,6 @@
 <?php
 
-require "config-mariadb.php";
+require "config/config-mariadb.php";
 
 $username = $_POST["username"] ?? "";
 $password = $_POST["password"] ?? "";

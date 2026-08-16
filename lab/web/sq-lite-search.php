@@ -1,6 +1,6 @@
 <?php
 
-require "config-sqlite.php";
+require "config/config-sqlite.php";
 
 $username = $_GET["username"] ?? "";
 

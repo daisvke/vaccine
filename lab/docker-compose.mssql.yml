@@ -1,0 +1,78 @@
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.mssql
+    ports:
+      - "8080:80"
+    depends_on:
+      mssql-init:
+        condition: service_completed_successfully
+      mariadb:
+        condition: service_started
+    restart: unless-stopped
+    volumes:
+      - ./web:/var/www/html
+
+  mariadb:
+    image: mariadb:latest
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: VaccineLab
+      MARIADB_USER: lab
+      MARIADB_PASSWORD: lab
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db/init-mariadb.sql:/docker-entrypoint-initdb.d/database.sql:ro
+      - db_data:/var/lib/mysql
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "VaccineLab123!"
+    ports:
+      - "1433:1433"
+
+  mssql-init:
+    build:
+      context: ./db
+      dockerfile: Dockerfile.mssql-init
+    depends_on:
+      - mssql
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+
+        echo "Waiting for SQL Server..."
+
+        until /opt/mssql-tools18/bin/sqlcmd \
+          -S mssql,1433 \
+          -U sa \
+          -P 'VaccineLab123!' \
+          -C \
+          -Q "SELECT 1" > /dev/null 2>&1
+        do
+          echo "SQL Server not ready..."
+          sleep 2
+        done
+
+        echo "SQL Server is ready."
+        echo "Running init-mariadb.sql..."
+
+        /opt/mssql-tools18/bin/sqlcmd \
+          -S mssql,1433 \
+          -U sa \
+          -P 'VaccineLab123!' \
+          -C \
+          -d master \
+          < /opt/init.sql
+
+        echo "MSSQL initialization complete."
+
+volumes:
+  db_data:
+  
