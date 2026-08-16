@@ -29,6 +29,10 @@ class Storage:
                 self.count = max(self.count, id)
 
     def get_data(self) -> list[dict]:
+        """
+        Get the existing data from the storage JSON file
+        """
+
         try:
             with open(self.filename, "r") as f:
                 try:
@@ -44,6 +48,22 @@ class Storage:
         except OSError as e:
             Logger.error(f"OS error: {e}")
         return []
+
+    def get_table_from_data(self, id: int) -> dict:
+        """
+        Get the results from the existing data with a given result ID
+        """
+        data = self.get_data()
+
+        for result in data:
+            if not isinstance(result, dict):
+                continue
+
+            if result.get("id") == id:
+                return result
+
+        Logger.error(f"No result found with ID {id}")
+        return {}
 
     def save(self, param_count: int, data: dict) -> None:
         try:

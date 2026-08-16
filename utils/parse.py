@@ -11,10 +11,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "url",
         type=str,
+        nargs="?",
         help="Target URL with its parameters."
         "All methods need its data given in the form of valid parameters and values."
         "Example: http://localhost:8080/user.php?id=1",
     )
+
+    # Results viewer mode
+    p.add_argument("-V", "--view", type=int, help="View the formatted results with the given result ID")
 
     # Method used by the request
     p.add_argument(
@@ -37,7 +41,15 @@ def parse_args() -> argparse.Namespace:
     # Use custom User-Agent
     p.add_argument("-A", "--agent", type=str, help="Custom User-Agent")
 
-    return p.parse_args()
+    args = p.parse_args()
+
+    if args.url is None and args.view is None:
+        p.error("a URL or --view must be provided")
+
+    if args.url is not None and args.view is not None:
+        p.error("URL and --view cannot be used together")
+
+    return args
 
 
 def extract_params(url: str) -> dict[str, str]:

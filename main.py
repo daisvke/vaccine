@@ -22,6 +22,13 @@ def main():
         Logger.DEBUG_ENABLED = True
         Logger.success("Enabled debug mode")
 
+    storage = Storage(args.output)
+
+    if args.view:
+        table_data = storage.get_table_from_data(args.view)
+        print_results(table_data)
+        return
+
     base_url = urlparse(args.url)._replace(query="").geturl()
 
     requester = Requester(base_url, method=args.method, user_agent=args.agent)
@@ -29,7 +36,6 @@ def main():
         exit(1)
 
     analyzer = Analyzer()
-    storage = Storage(args.output)
     boolean = BooleanInjector(requester, analyzer)
     error = ErrorInjector(requester, analyzer)
     union = UnionInjector(requester, analyzer)

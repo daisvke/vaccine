@@ -38,18 +38,15 @@ class Analyzer:
         errors = [
             "unrecognized token",
             "ora-",
-
             # mysql/mariadb
             "in your sql syntax",
             "mariadb",
             "mysqli_sql_exception",
             "unknown column",
             "different number of columns",
-
             "syntax error",
             "unterminated quoted string",
             "unclosed quotation mark",
-
             # pdo sqlite
             "pdoexception",
             "general error",

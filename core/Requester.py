@@ -62,7 +62,9 @@ class Requester:
             elif self.method == "PUT":
                 r = self.session.put(self.base_url, data=params, timeout=self.timeout)
             elif self.method == "DELETE":
-                r = self.session.delete(self.base_url, data=params, timeout=self.timeout)
+                r = self.session.delete(
+                    self.base_url, data=params, timeout=self.timeout
+                )
             else:
                 raise ValueError(f"Unsupported method: {self.method}")
 
