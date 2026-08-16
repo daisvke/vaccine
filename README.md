@@ -9,8 +9,10 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 ---
 
 ## TO DO
-- Other DB? Oracle? Microsoft SQL Server ? (test pages + code)
+- Other DB?
+  - Oracle? Microsoft SQL Server ?
 - Video
+- results viewer mode with result ID (add ID in JSON)
 
 ---
 

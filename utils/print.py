@@ -1,4 +1,4 @@
-from utils.constants import GREEN, RED, RESET
+from utils.constants import BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, YELLOW
 from utils.Logger import Logger
 
 
@@ -10,14 +10,12 @@ def status(value: bool) -> str:
 
 
 def print_table(table_name: str, columns: dict) -> None:
-    """
-    Print a dumped table with column metadata in headers.
-    """
+    """Print a dumped table with column metadata in headers."""
 
-    print(f"\nTable: {table_name}")
+    print(f"\n{BOLD}{BLUE}Table: {CYAN}{table_name}{RESET}")
 
     if not columns:
-        print("(empty)")
+        print(f"{YELLOW}(empty){RESET}")
         return
 
     headers = []
@@ -31,7 +29,7 @@ def print_table(table_name: str, columns: dict) -> None:
         if max_length is not None:
             meta += f",{max_length}"
 
-        headers.append(f"{column_name} ({meta})")
+        headers.append(f"{CYAN}{column_name}{RESET} {MAGENTA}({meta}){RESET}")
         values[column_name] = info.get("values", [])
 
     row_count = max((len(v) for v in values.values()), default=0)
@@ -42,24 +40,31 @@ def print_table(table_name: str, columns: dict) -> None:
             [str(values[col][i]) if i < len(values[col]) else "" for col in columns]
         )
 
-    # Calculate widths
+    # Widths should use the uncolored text, otherwise ANSI escape
+    # sequences would incorrectly increase the calculated width.
+    plain_headers = [
+        f"{column_name} ({columns[column_name].get('data_type', 'unknown')})"
+        for column_name in columns
+    ]
+
     widths = [
-        max(len(headers[i]), max((len(row[i]) for row in rows), default=0))
+        max(
+            len(plain_headers[i]),
+            max((len(row[i]) for row in rows), default=0),
+        )
         for i in range(len(headers))
     ]
 
     separator = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
 
-    # Header
     print(separator)
     print(
         "| "
-        + " | ".join(headers[i].ljust(widths[i]) for i in range(len(headers)))
+        + " | ".join(plain_headers[i].ljust(widths[i]) for i in range(len(headers)))
         + " |"
     )
     print(separator)
 
-    # Rows
     for row in rows:
         print(
             "| " + " | ".join(row[i].ljust(widths[i]) for i in range(len(row))) + " |"
@@ -86,11 +91,11 @@ def print_results(data: dict) -> None:
     )
 
     if detected:
-        print(
-            f"{RED}Found {detected} SQL injection technique{'ies' if detected > 1 else 'y'}!{RESET}"
+        Logger.success(
+            f"Found {detected} SQL injection technique{'s' if detected > 1 else ''}!"
         )
     else:
-        print(f"{GREEN}No SQL injection technique found{RESET}")
+        Logger.success("No SQL injection technique found")
 
     def colored_detail(text: str, ok: bool, width: int) -> str:
         color = GREEN if ok else RED
@@ -155,10 +160,17 @@ def print_results(data: dict) -> None:
         """
 		Print each test
   		"""
-        print(f"| {param:<9} | {method:<6} | {'Boolean':<8} | {bool_detail} |")
-        print(f"| {'':<9} | {'':<6} | {'Error':<8} | {error_detail} |")
-        print(f"| {'':<9} | {'':<6} | {'Union':<8} | {union_detail} |")
-        print(f"| {'':<9} | {'':<6} | {'Time':<8} | {time_detail} |")
+        print(
+            f"| {CYAN}{param:<9}{RESET} | "
+            f"{YELLOW}{method:<6}{RESET} | "
+            f"{BLUE}{'Boolean':<8}{RESET} | {bool_detail} |"
+        )
+
+        print(f"| {'':<9} | {'':<6} | {BLUE}{'Error':<8}{RESET} | {error_detail} |")
+
+        print(f"| {'':<9} | {'':<6} | {BLUE}{'Union':<8}{RESET} | {union_detail} |")
+
+        print(f"| {'':<9} | {'':<6} | {BLUE}{'Time':<8}{RESET} | {time_detail} |")
 
         print(
             "+-----------+--------+----------+--------------------------------------------------------------+"

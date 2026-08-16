@@ -9,7 +9,7 @@ from injections.TimeInjector import TimeInjector
 from injections.UnionInjector import UnionInjector
 from utils.constants import RESET, YELLOW, fingerprints
 from utils.Logger import Logger
-from utils.parser import extract_params
+from utils.parse import extract_params
 
 
 class Scanner:
@@ -37,8 +37,9 @@ class Scanner:
 
         self.results: list = []
 
-    def scan(self, url: str):
+    def scan(self, url: str) -> tuple[int, dict]:
         params = extract_params(url)
+        params_count = 0
 
         if params == {}:
             Logger.warning("No params found, exiting...")
@@ -185,10 +186,12 @@ class Scanner:
                 }
             )
 
+            params_count += 1
+
         final_result = {
             "url": self.base_url,
             "method": self.method,
             "results": self.results,
         }
 
-        return final_result
+        return params_count, final_result

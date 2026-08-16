@@ -11,7 +11,7 @@ from injections.ErrorInjector import ErrorInjector
 from injections.TimeInjector import TimeInjector
 from injections.UnionInjector import UnionInjector
 from utils.Logger import Logger
-from utils.parser import parse_args
+from utils.parse import parse_args
 from utils.print import print_results
 
 
@@ -49,12 +49,12 @@ def main():
     )
 
     # Perform the tests on the URL
-    results = scanner.scan(args.url)
+    params_count, results = scanner.scan(args.url)
 
     print_results(results)
 
     # Store the results of the tests on the storage file
-    storage.save({"url": args.url, "method": args.method, "results": results})
+    storage.save(params_count, results)
 
 
 if __name__ == "__main__":

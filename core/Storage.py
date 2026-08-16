@@ -9,6 +9,7 @@ class Storage:
 
     def __init__(self, filename: str = "vaccine.json"):
         self.filename = filename
+        self.count = 0
 
         if not os.path.exists(self.filename):
             try:
@@ -21,16 +22,33 @@ class Storage:
 
             except OSError as e:
                 Logger.error(f"OS error: {e}")
+        else:
+            existing = self.get_data()
+            for result in existing:
+                id = result.get("id", 0)
+                self.count = max(self.count, id)
 
-    def save(self, data: dict) -> None:
+    def get_data(self) -> list[dict]:
         try:
             with open(self.filename, "r") as f:
                 try:
-                    existing = json.load(f)
+                    return json.load(f)
                 except json.JSONDecodeError:
-                    existing = []
+                    return []
+        except FileNotFoundError:
+            Logger.error("File does not exist")
 
-            existing.append(data)
+        except PermissionError:
+            Logger.error("Permission denied")
+
+        except OSError as e:
+            Logger.error(f"OS error: {e}")
+        return []
+
+    def save(self, param_count: int, data: dict) -> None:
+        try:
+            existing = self.get_data()
+            existing.append({"id": self.count + 1, **data})
 
             with open(self.filename, "w") as f:
                 json.dump(existing, f, indent=4)
