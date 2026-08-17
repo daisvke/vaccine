@@ -9,8 +9,8 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 ---
 
 ## TO DO
-- Other DB?
-  - Oracle? Microsoft SQL Server ?
+- Add num values in DBs => treat values diff str/num
+=> get data type => str|num
 - Video
 
 ---
@@ -334,3 +334,13 @@ The following reference is useful when developing and testing MySQL/MariaDB SQL 
 Vaccine is a security-testing tool. Do not use it against systems without authorization.
 
 The author is not responsible for damage, data loss, service disruption, or unauthorized access resulting from misuse of this software.
+
+
+sudo docker compose -f docker-compose.mssql.yml exec mssql \
+  /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost \
+  -U sa \
+  -P 'VaccineLab123!' \
+  -C \
+  -d VaccineLab \
+  -Q "SELECT id, username, password FROM users WHERE username = 'admin' UNION SELECT TOP 1 schema_name, NULL, NULL FROM information_schema.schemata"

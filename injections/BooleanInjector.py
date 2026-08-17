@@ -83,6 +83,7 @@ class BooleanInjector:
 
             # To check if the name length is higher to the current mid value
             payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
+            print("payyyy ----", payload)
             response = self.requester.send({param: payload})
             # Logger.debug(f"Diff len: {diff_len}")
 
@@ -132,6 +133,7 @@ class BooleanInjector:
                 # Logger.debug(f"Formatted char expression: {formatted_char_expression}")
 
                 payload = f"{ctx.prefix}AND {formatted_char_expression}>{mid}{ctx.suffix}"
+                print(payload)
                 response = self.requester.send({param: payload})
 
                 # If different then the condition is right
