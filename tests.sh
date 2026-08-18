@@ -4,13 +4,13 @@
 
 TESTS=(
     # Microsoft Server SQL
-    # "GET|http://localhost:8080/ms-sql-search.php?username=admin"
+    "GET|http://localhost:8080/ms-sql-search.php?username=admin"
 
     # SQLite
     # "GET|http://localhost:8080/sq-lite-search.php?username=admin"
 
     # MariaDB
-	"GET|http://localhost:8080/user.php?id=1"
+	# "GET|http://localhost:8080/user.php?id=1"
     # "PATCH|http://localhost:8080/methods.php?username=admin"
     # "PUT|http://localhost:8080/methods.php?username=admin"
     # "DELETE|http://localhost:8080/methods.php?username=admin"

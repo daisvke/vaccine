@@ -33,6 +33,7 @@ Heigh values
 HEIGH_ELEMENT_NAME_LENGTH = 64
 HEIGH_COL_VALUE_LENGTH = 1024
 HEIGH_ELEMENT_COUNT = 1000
+HEIGH_MAX_CHAR_LENGTH = 1_000_000
 
 
 """
@@ -118,3 +119,52 @@ DIFFER_LENGTH_COL_TYPE = 50
 DIFFER_LENGTH_BOOL = 50
 DIFFER_LENGTH_COL_COUNT = 100
 DIFF_MARKER = "DF4456DdgZERZERAA768"
+
+
+"""
+Data types
+"""
+
+STRING_TYPES = {
+    # MySQL / MariaDB
+    "char",
+    "varchar",
+    "tinytext",
+    "text",
+    "mediumtext",
+    "longtext",
+    "enum",
+    "set",
+
+    # SQL Server
+    "nchar",
+    "nvarchar",
+    "ntext",
+
+    # SQLite
+    "character",
+    "clob",
+}
+
+NUMERIC_TYPES = {
+    # MySQL / MariaDB
+    "tinyint",
+    "smallint",
+    "mediumint",
+    "int",
+    "integer",
+    "bigint",
+
+    # SQLite
+    "int2",
+    "int8",
+}
+
+BOOLEAN_TYPES = {
+    # SQL Server
+    "bit",
+
+    # MySQL / MariaDB
+    "boolean",
+    "bool",
+}

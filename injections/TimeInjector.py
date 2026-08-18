@@ -50,7 +50,7 @@ class TimeInjector:
 
         return self.analyzer.is_delayed(r_normal, r_sleep, self.sleep)
 
-    def get_number_returned_by_sql(
+    def get_number(
         self,
         param: str,
         ctx: InjectionContext,
@@ -90,7 +90,7 @@ class TimeInjector:
 
         return low
 
-    def get_db_elem_name(
+    def get_string(
         self,
         database_engine: str,
         param: str,
@@ -151,7 +151,7 @@ class TimeInjector:
 
         return expr_name
 
-    def get_db_elem_name_chars_at_index(
+    def get_string_chars_at_index(
         self,
         database_engine: str,
         param: str,

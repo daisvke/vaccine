@@ -62,7 +62,7 @@ class BooleanInjector:
 
         return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
 
-    def get_number_returned_by_sql(
+    def get_number(
         self, param: str, ctx: InjectionContext, expression: str, high: int
     ) -> int:
         """
@@ -98,20 +98,20 @@ class BooleanInjector:
 
         return low
 
-    def get_db_elem_name(
+    def get_string(
         self,
         database_engine: str,
         param: str,
         ctx: InjectionContext,
         expression: str,
-        expr_name_len: int,
+        string_len: int,
     ) -> str:
         """
-        Return a database element's name after by checking the results of boolean blind tests.
+        Return a database element's name or value by checking the results of boolean blind tests.
         This method uses binary search to find each character efficiently.
         """
 
-        expr_name = ""
+        result = ""
         
         # Get the database-specific expression to handle characters
         char_expression = fingerprints[database_engine.lower()].char
@@ -122,7 +122,7 @@ class BooleanInjector:
         # it would probably mean that the tested condition is true.
         r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
 
-        for digit in range(1, expr_name_len + 1):
+        for digit in range(1, string_len + 1):
             low = 32
             high = 126
 
@@ -146,11 +146,11 @@ class BooleanInjector:
                 else:
                     high = mid
 
-            expr_name += chr(low)
+            result += chr(low)
 
-        return expr_name
+        return result
 
-    def get_db_elem_name_chars_at_index(
+    def get_string_chars_at_index(
         self,
         database_engine: str,
         param: str,
@@ -159,7 +159,7 @@ class BooleanInjector:
         range: list[int],
     ) -> list[str]:
         """
-        Returns a given element's character at the given indexes by checking the
+        Returns a given string's character at the given indexes by checking the
         results of boolean blind tests.
         """
 
