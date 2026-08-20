@@ -11,6 +11,8 @@ RUN mkdir -p /var/www/html/data \
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
+CMD ["bash", "-c", "php /var/www/html/init-sqlite.php && apache2-foreground"]
+
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

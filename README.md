@@ -9,8 +9,8 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 ---
 
 ## TO DO
-- Add num values in DBs => treat values diff str/num
-=> get data type => str|num
+- do get_boolean in bool+time
+- make more complex DBs
 - Video
 
 ---

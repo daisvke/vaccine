@@ -1,13 +1,16 @@
+import re
 from re import findall
 
 from injections.BooleanInjector import BooleanInjector
 from injections.TimeInjector import TimeInjector
 from injections.UnionInjector import UnionInjector
 from utils.constants import (
+    BOOLEAN_TYPES,
     HEIGH_COL_VALUE_LENGTH,
     HEIGH_ELEMENT_COUNT,
     HEIGH_ELEMENT_NAME_LENGTH,
     HEIGH_MAX_CHAR_LENGTH,
+    HEIGH_MAX_NUMERIC_VALUE,
     NUMERIC_TYPES,
     RESET,
     STRING_TYPES,
@@ -37,7 +40,11 @@ class BlindExtractor:
 
     def find_words(self, body: str, start: str, end: str, length: int) -> list[str]:
         """Find unique words matching a regex in the given text."""
+        start = re.escape(start)
+        end = re.escape(end)
+
         pattern = rf"\b{start}\w{{{length - 2}}}{end}\b"
+
         return list(dict.fromkeys(findall(pattern, body)))
 
     def find_db_elem_name(
@@ -173,6 +180,7 @@ class BlindExtractor:
         Logger.info(db_elem_count_expression)
 
         get_number = self.boolean.get_number if boolInjection else self.time.get_number
+        get_bool = self.boolean.get_bool if boolInjection else self.time.get_bool
 
         # Get the number of database element's entries on the database
         db_elem_count = get_number(
@@ -196,8 +204,9 @@ class BlindExtractor:
                 {where}
                 {limit_expression2}
             """
-            print("datatypeeee:", data_type.lower())
-            if data_type.lower() in STRING_TYPES:
+
+            data_type = re.sub(r"\(.*\)", "", data_type).strip().lower()
+            if data_type in STRING_TYPES:
                 db_elem_name = self.find_db_elem_name(
                     param,
                     ctx,
@@ -206,8 +215,10 @@ class BlindExtractor:
                     expression,
                     union_expression,
                 )
-            elif data_type.lower() in NUMERIC_TYPES:
-                db_elem_name = get_number(param, ctx, expression, 2000)
+            elif data_type in NUMERIC_TYPES:
+                db_elem_name = get_number(param, ctx, expression, HEIGH_MAX_NUMERIC_VALUE)
+            elif data_type in BOOLEAN_TYPES:
+                db_elem_name = get_bool(param, ctx, expression)
             else:
                 db_elem_name = "-"
 
@@ -329,7 +340,7 @@ class BlindExtractor:
                                 f"AND column_name = {sql_col_name})",
                                 HEIGH_MAX_CHAR_LENGTH,
                             )
-                            if data_type.lower() in STRING_TYPES
+                            if re.sub(r"\(.*\)", "", data_type).strip().lower() in STRING_TYPES
                             else None
                         )
 
