@@ -1,5 +1,4 @@
 from sys import exit
-from urllib.parse import urlparse
 
 from core.Analyzer import Analyzer
 from core.Requester import Requester
@@ -19,7 +18,7 @@ def main():
     args = parse_args()
 
     if args.debug:
-        Logger.DEBUG_ENABLED = True
+        Logger.DEBUG_ENABLED = False
         Logger.success("Enabled debug mode")
 
     storage = Storage(args.output)
@@ -29,9 +28,7 @@ def main():
         print_results(table_data)
         return
 
-    base_url = urlparse(args.url)._replace(query="").geturl()
-
-    requester = Requester(base_url, method=args.method, user_agent=args.agent)
+    requester = Requester(args.url, method=args.method, user_agent=args.agent)
     if not requester.validateUrl():  # Check if baseline URL is reachable
         exit(1)
 
@@ -43,7 +40,7 @@ def main():
     extractor = BlindExtractor(time, boolean, union)
 
     scanner = Scanner(
-        base_url,
+        args.url,
         args.method,
         requester,
         analyzer,

@@ -2,6 +2,9 @@
 
 require "config/config-mariadb.php";
 
+// Check the User-Agent
+echo 'User-Agent: ' . ($_SERVER['HTTP_USER_AGENT'] ?? 'no user agent');
+
 $id = $_GET["id"];
 
 $sql =

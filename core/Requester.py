@@ -68,6 +68,8 @@ class Requester:
             else:
                 raise ValueError(f"Unsupported method: {self.method}")
 
+            # Logger.debug(f"Received body: {r.text}")
+
             return HttpResponse(
                 status=r.status_code,
                 body=r.text,

@@ -15,7 +15,7 @@ from utils.parse import extract_params
 class Scanner:
     def __init__(
         self,
-        base_url: str,
+        url: str,
         method: str,
         requester: Requester,
         analyzer: Analyzer,
@@ -25,7 +25,7 @@ class Scanner:
         time: TimeInjector,
         extract: BlindExtractor,
     ):
-        self.base_url = base_url
+        self.url = url
         self.method = method
         self.requester = requester
         self.analyzer = analyzer
@@ -44,7 +44,7 @@ class Scanner:
         if params == {}:
             Logger.warning("No params found, exiting...")
             exit(0)
-
+    
         for param, value in params.items():
             print()
             Logger.info(
@@ -188,7 +188,7 @@ class Scanner:
             params_count += 1
 
         final_result = {
-            "url": self.base_url,
+            "url": self.url,
             "method": self.method,
             "results": self.results,
         }

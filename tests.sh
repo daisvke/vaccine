@@ -10,7 +10,7 @@ TESTS=(
     # "GET|http://localhost:8080/sq-lite-search.php?username=admin"
 
     # MariaDB
-	# "GET|http://localhost:8080/user.php?id=1"
+	"GET|http://localhost:8080/user.php?id=1"
     # "PATCH|http://localhost:8080/methods.php?username=admin"
     # "PUT|http://localhost:8080/methods.php?username=admin"
     # "DELETE|http://localhost:8080/methods.php?username=admin"
@@ -18,7 +18,7 @@ TESTS=(
     # "POST|http://localhost:8080/product.php?id=1"
 
     # Darkly
-	"GET|http://192.168.56.102/index.php?page=member&id=1&Submit=Submit"
+	# "GET|http://192.168.56.102/index.php?page=member&id=1&Submit=Submit"
 	# "GET|http://192.168.56.102/?page=searchimg&id=1&Submit=Submit"
 )
 
@@ -34,6 +34,7 @@ do
         python3 main.py
         -X "$METHOD"
         "$URL"
+        -A "Custom User-Agent"  # test with user.php which prints the received user agent
         --debug
 	)
 

@@ -34,6 +34,7 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 ## TO DO
 
 - Video
+- Add to darkly
 
 ---
 
