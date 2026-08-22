@@ -68,6 +68,7 @@ class ErrorInjector:
         for p in payloads:
             response = self.requester.send({param: p})
             # Logger.debug(f"payload: {p}")
+            # Logger.debug(f"response: {response.body}")
 
             if self.analyzer.has_sql_error(response):
                 if not database:

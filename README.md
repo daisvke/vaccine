@@ -8,9 +8,31 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 
 ---
 
+## Table of Contents
+
+- [Usage](#usage)
+  - [View mode](#view-mode)
+- [SQL Injection (SQLi)](#sql-injection-sqli)
+- [Current limitations](#current-limitations)
+- [Architecture](#architecture)
+- [Detection workflow](#detection-workflow)
+  - [Blind extraction with Boolean and Time-based SQLi](#blind-extraction-with-boolean-and-time-based-sqli)
+  - [Numeric value extraction](#numeric-value-extraction)
+- [Database enumeration](#database-enumeration)
+  - [Data type handling](#data-type-handling)
+- [JSON output](#json-output)
+- [Testing](#testing)
+  - [Local lab](#local-lab)
+  - [MSSQL lab](#mssql-lab)
+  - [SQLite initialization](#sqlite-initialization)
+- [Tester](#tester)
+- [SQL Injection reference](#sql-injection-reference)
+- [Legal notice](#legal-notice)
+
+---
+
 ## TO DO
-- do get_boolean in bool+time
-- make more complex DBs
+
 - Video
 
 ---
@@ -21,18 +43,26 @@ Clone the repository and install the project's Python dependencies:
 
 ```sh
 git clone <repository-url>
+
 cd vaccine
-```
+
+python -m venv venv
+
+. venv/bin/activate
+
+pip install -r requirements.txt
+````
 
 Then run the CLI according to the project's entry point.
 
 Usage:
 
-```
+```text
 main.py [-h] [-V VIEW] [-X {GET,POST,PATCH,PUT,DELETE}] [-o OUTPUT] [-D] [-A AGENT] [url]
 
 positional arguments:
-  url                   Target URL with its parameters.All methods need its data given in the form of valid parameters and values.Example: http://localhost:8080/user.php?id=1
+  url                   Target URL with its parameters. All methods need their data given in the form of valid parameters and values.
+                        Example: http://localhost:8080/user.php?id=1
 
 options:
   -h, --help            show this help message and exit
@@ -43,6 +73,29 @@ options:
   -D, --debug           Enable debug mode
   -A, --agent AGENT     Custom User-Agent
 ```
+
+### View mode
+
+Vaccine supports a view mode for inspecting previously stored results without running another scan.
+
+Use:
+
+```sh
+python main.py -V <result-id>
+```
+
+View mode displays the formatted database enumeration results and can be used to inspect the database structure, including:
+
+```text
+Database
+└── Tables
+    └── Columns
+        ├── Data type
+        ├── Character maximum length
+        └── Values
+```
+
+This is useful when you only want to inspect the enumerated tables and columns from a previously stored result.
 
 ---
 
@@ -59,8 +112,11 @@ WHERE id = <input>;
 Vaccine supports several SQL injection techniques:
 
 * **Boolean-based SQLi**: injects a true/false condition into the query and infers information from differences in the application's responses.
+
 * **UNION-based SQLi**: uses `UNION SELECT` to retrieve additional data when the original query is compatible with a UNION query.
+
 * **Time-based SQLi**: uses conditional database delays and infers information from differences in response times.
+
 * **Error-based SQLi**: relies on database error messages returned by the application to detect injection and identify the database engine.
 
 ---
@@ -68,10 +124,16 @@ Vaccine supports several SQL injection techniques:
 ## Current limitations
 
 * No authentication/login handling.
+
 * Designed for GET, POST, PUT, PATCH, and DELETE parameters.
-* Database enumeration currently relies on MySQL/MariaDB-compatible `information_schema` metadata.
-* Time-based detection is sensitive to network and server latency.
+
+* Database enumeration currently supports database-engine-specific metadata and extraction logic.
+
 * Enumeration capabilities depend on the privileges available to the database user.
+
+* Time-based detection is sensitive to network and server latency.
+
+* Some database data types are currently unsupported for value extraction, such as floating-point and decimal types.
 
 ---
 
@@ -102,12 +164,12 @@ DB Fingerprinter ──┐
  |                 |   Union
  |                 ▼     |
  |          Injection Engine ────▶ Get databases
- |                 |                     |
- |              ┌── ──┐                  +-- get tables from information_schema.tables
- |              |     |                  |       WHERE table_schema = <that database>
- |            Bool  Time                 |
- |                                       +-- get columns from information_schema.columns
- |                                               WHERE table_schema = <that database>
+ |                 |                    |
+ |              ┌── ──┐                +-- get tables from information_schema.tables
+ |              |     |                |       WHERE table_schema = <that database>
+ |           Bool    Time              |
+ |                                     +-- get columns from information_schema.columns
+ |                                             WHERE table_schema = <that database>
  ▼
 Table Display of the Database
  │
@@ -127,7 +189,7 @@ The detected context is then used by subsequent injection tests.
 
 For UNION-based injection, Vaccine determines the number of columns expected by the original query before attempting further enumeration.
 
-When the required injection technique is available, Vaccine can enumerate database metadata using MySQL/MariaDB's `information_schema`.
+When the required injection technique is available, Vaccine can enumerate database metadata using database-engine-specific metadata queries.
 
 ### Blind extraction with Boolean and Time-based SQLi
 
@@ -139,15 +201,24 @@ For example, if the character is `A`, its ASCII value is `65`. The search can te
 
 ```text
 32 ─────────────────────────────── 126
-                  │
-                > 79 ?  → false
-        32 ───────────── 79
-                  │
-                > 55 ?  → true
-                  │
-                ...
-                  │
-                  65
+
+              │
+
+            > 79 ?  → false
+
+    32 ───────────── 79
+
+              │
+
+            > 55 ?  → true
+
+              │
+
+             ...
+
+              │
+
+              65
 ```
 
 With **Boolean-based SQLi**, the result of each comparison is inferred from a difference in the HTTP response. A true condition produces one observable response, while a false condition produces another. Binary search uses that true/false result to select the next half of the ASCII range.
@@ -155,6 +226,23 @@ With **Boolean-based SQLi**, the result of each comparison is inferred from a di
 With **Time-based SQLi**, the same binary-search algorithm is used, but the true/false result is communicated through response time instead of response content. A condition can trigger a database delay when true and avoid the delay when false. A significantly slower response therefore represents `true`, while a normal response represents `false`.
 
 The process is repeated for every character position until the complete value has been reconstructed.
+
+### Numeric value extraction
+
+For supported integer types, Vaccine can determine numeric values directly using boolean or time-based binary search rather than converting the value to individual characters.
+
+Current integer types include:
+
+```text
+TINYINT
+SMALLINT
+MEDIUMINT / INT
+BIGINT
+```
+
+depending on the database engine.
+
+Floating-point and decimal types are currently treated as unsupported because reliable value extraction requires additional handling for decimal precision and floating-point representation.
 
 ---
 
@@ -183,7 +271,7 @@ performance_schema
 sys
 ```
 
-Table and column metadata is retrieved from:
+Table and column metadata can be retrieved from:
 
 ```sql
 information_schema.tables
@@ -194,6 +282,60 @@ and:
 ```sql
 information_schema.columns
 ```
+
+The extracted column metadata includes the database's declared data type and, where applicable, its character maximum length.
+
+### Data type handling
+
+Vaccine groups database column types into categories used by the extraction engine.
+
+Example:
+
+```text
+STRING
+├── CHAR
+├── VARCHAR
+├── NCHAR
+├── NVARCHAR
+├── TEXT
+└── NTEXT
+
+INTEGER
+├── TINYINT
+├── SMALLINT
+├── MEDIUMINT
+├── INT
+└── BIGINT
+
+BOOLEAN
+└── BOOLEAN / BIT
+
+UNSUPPORTED
+├── FLOAT
+└── DECIMAL
+```
+
+Database engines may expose type names differently. Declared lengths such as:
+
+```text
+VARCHAR(50)
+CHAR(10)
+DECIMAL(10,2)
+```
+
+are normalized so that the base data type can be compared against the supported type lists.
+
+For example:
+
+```text
+VARCHAR(50)   → VARCHAR
+CHAR(10)      → CHAR
+DECIMAL(10,2) → DECIMAL
+```
+
+Large or legacy text types may require database-specific conversion when determining the actual length of a value.
+
+For example, SQL Server's legacy `TEXT` and `NTEXT` types require conversion to their corresponding `VARCHAR(MAX)` or `NVARCHAR(MAX)` types when certain string-length operations are performed.
 
 ---
 
@@ -208,14 +350,44 @@ The database dump follows a structure similar to:
   "database_name": {
     "table_name": {
       "column_name": {
-        "data_types": [],
-        "character_maximum_lengths": [],
-        "values": []
+        "data_type": "varchar",
+        "character_maximum_length": 100,
+        "values": [
+          "admin",
+          "root"
+        ]
       }
     }
   }
 }
 ```
+
+The stored result can also contain scan metadata such as the target URL and HTTP method.
+
+For example:
+
+```json
+{
+  "url": "http://localhost:8080/user.php?id=1",
+  "method": "GET",
+  "results": {
+    "database_name": {
+      "table_name": {
+        "column_name": {
+          "data_type": "varchar",
+          "character_maximum_length": 100,
+          "values": [
+            "admin",
+            "root"
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+The `-V / --view` option can be used to display a previously stored result without performing a new scan.
 
 ---
 
@@ -227,10 +399,23 @@ For testing, it is recommended to use intentionally vulnerable applications in a
 
 The project includes an intentionally vulnerable SQL injection lab in [`lab/`](lab/).
 
-Build and start it from the project root:
+The lab contains testing environments for multiple database engines:
+
+```text
+lab/
+├── MariaDB
+├── SQLite
+├── MSSQL
+└── web application
+```
+
+### Default lab
+
+The normal Compose file starts the web application together with the MariaDB and SQLite testing environments:
 
 ```sh
 cd lab
+
 docker compose up --build
 ```
 
@@ -250,61 +435,206 @@ docker compose down
 
 The lab is intended for local development and testing. Do not expose it to untrusted networks.
 
-## DVWA
+### MSSQL lab
 
-One option is **Damn Vulnerable Web Application (DVWA)**.
-
-Start DVWA with Docker:
+MSSQL is provided through a separate Compose file:
 
 ```sh
-sudo docker run --rm -it -p 4280:80 vulnerables/web-dvwa
+docker compose -f docker-compose.mssql.yml up --build
 ```
 
-Then access:
+MSSQL is separated into its own Compose configuration because the Microsoft SQL Server Docker image is significantly larger and takes considerably longer to download.
 
-```text
-http://localhost:4280
-```
-
-If Docker is running inside WSL or a VM and the application needs to be accessed from the host, find the WSL/VM IP:
+The MSSQL Compose configuration still includes the other services required by the lab. Therefore, using:
 
 ```sh
-hostname -I
+docker compose -f docker-compose.mssql.yml up --build
 ```
 
-Example:
+starts the complete lab environment, including:
 
 ```text
-192.168.47.192 172.17.0.1
+Web application
+     │
+     ├── MariaDB
+     │
+     ├── SQLite
+     │
+     └── MSSQL
 ```
 
-The first address is the WSL/VM address in this example; the second is typically Docker's bridge gateway.
+The difference is that this configuration additionally starts SQL Server.
 
-From the host, the application can then be accessed using:
+The SQL Server container exposes port `1433`.
+
+The MSSQL initialization container waits for SQL Server to become available and then executes the MSSQL initialization SQL script.
+
+Useful commands:
+
+Check the running containers:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml ps
+```
+
+View MSSQL logs:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml logs mssql
+```
+
+View the initialization logs:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml logs mssql-init
+```
+
+Connect to the MSSQL database from the container:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml exec mssql \
+  /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost \
+  -U sa \
+  -P 'VaccineLab123!' \
+  -C \
+  -d VaccineLab
+```
+
+Run a query directly:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml exec mssql \
+  /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost \
+  -U sa \
+  -P 'VaccineLab123!' \
+  -C \
+  -d VaccineLab \
+  -Q "SELECT * FROM users"
+```
+
+Check the character length of the MSSQL `TEXT` test value:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml exec mssql \
+  /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost \
+  -U sa \
+  -P 'VaccineLab123!' \
+  -C \
+  -d VaccineLab \
+  -Q "SELECT LEN(
+    CAST(
+        (
+            SELECT [long_text]
+            FROM [VaccineLab].[dbo].[users]
+            ORDER BY [id]
+            OFFSET 0 ROWS FETCH NEXT 1 ROW ONLY
+        )
+        AS VARCHAR(MAX)
+    )
+);"
+```
+
+For SQL Server `TEXT` and `NTEXT` values, string functions require an explicit conversion.
+
+For `TEXT`:
+
+```sql
+SELECT LEN(
+    CAST(
+        (
+            SELECT [long_text]
+            FROM [VaccineLab].[dbo].[users]
+            ORDER BY [id]
+            OFFSET 0 ROWS FETCH NEXT 1 ROW ONLY
+        )
+        AS VARCHAR(MAX)
+    )
+);
+```
+
+For `NTEXT`, use `NVARCHAR(MAX)`:
+
+```sql
+SELECT LEN(
+    CAST(
+        (
+            SELECT [unicode_long_text]
+            FROM [VaccineLab].[dbo].[users]
+            ORDER BY [id]
+            OFFSET 0 ROWS FETCH NEXT 1 ROW ONLY
+        )
+        AS NVARCHAR(MAX)
+    )
+);
+```
+
+The MSSQL lab uses the `id` column for deterministic row ordering. Legacy SQL Server `TEXT` and `NTEXT` columns cannot be directly sorted with `ORDER BY`, so they should not be used as the pagination/order column.
+
+Stop the MSSQL lab with:
+
+```sh
+sudo docker compose -f docker-compose.mssql.yml down
+```
+
+If the lab is intentionally disposable and the database needs to be recreated, remove the relevant database volume/container data before starting it again.
+
+### SQLite initialization
+
+SQLite does not require a separate database container.
+
+The project includes an initialization script:
 
 ```text
-http://192.168.47.192:4280
+lab/init-sqlite.php
 ```
 
-From the Docker/WSL environment itself:
+which creates the SQLite test tables and inserts the lab data.
 
-```text
-http://localhost:4280
+Run it manually with:
+
+```sh
+sudo docker compose exec web php /var/www/html/init-sqlite.php
 ```
 
-### DVWA setup
+The SQLite initialization script can be used to reset the SQLite test database when the existing tables are dropped before initialization.
 
-Default credentials:
+To inspect the SQLite database schema from the web container:
 
-```text
-Login:    admin
-Password: password
+```sh
+sudo docker compose exec web php -r '
+require "/var/www/html/config/config-sqlite.php";
+
+foreach ($conn->query("SELECT name, sql FROM sqlite_master WHERE type=\"table\"") as $row) {
+    print_r($row);
+}
+'
 ```
 
-After logging in, complete the initial DVWA setup and create the database using the **Create / Reset Database** button.
+To inspect the columns of the `users` table:
 
-> Keep vulnerable applications such as DVWA isolated from networks and systems you do not control.
+```sh
+sudo docker compose exec web php -r '
+require "/var/www/html/config/config-sqlite.php";
 
+foreach ($conn->query("PRAGMA table_info(users)") as $row) {
+    echo $row["name"] . PHP_EOL;
+}
+'
+```
+
+To find SQLite database files inside the web container:
+
+```sh
+sudo docker compose exec web \
+  find /var/www/html -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) -ls
+```
+
+If the SQLite database is only being used for testing, the database file can be removed and recreated by running the initialization script again.
+
+---
 
 ## Tester
 
@@ -314,6 +644,7 @@ Run it with:
 
 ```sh
 chmod +x tester.sh
+
 ./tester.sh
 ```
 
@@ -325,7 +656,7 @@ Add or uncomment entries in `TESTS` to test different endpoints and HTTP methods
 
 The following reference is useful when developing and testing MySQL/MariaDB SQL injection functionality:
 
-[MySQL SQL Injection Cheat Sheet — Pentestmonkey](https://pentestmonkey.net/cheat-sheet/sql-injection/mysql-sql-injection-cheat-sheet?utm_source=chatgpt.com)
+[MySQL SQL Injection Cheat Sheet — Pentestmonkey](https://pentestmonkey.net/cheat-sheet/sql-injection/mysql-sql-injection-cheat-sheet)
 
 ---
 
@@ -334,13 +665,3 @@ The following reference is useful when developing and testing MySQL/MariaDB SQL 
 Vaccine is a security-testing tool. Do not use it against systems without authorization.
 
 The author is not responsible for damage, data loss, service disruption, or unauthorized access resulting from misuse of this software.
-
-
-sudo docker compose -f docker-compose.mssql.yml exec mssql \
-  /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost \
-  -U sa \
-  -P 'VaccineLab123!' \
-  -C \
-  -d VaccineLab \
-  -Q "SELECT id, username, password FROM users WHERE username = 'admin' UNION SELECT TOP 1 schema_name, NULL, NULL FROM information_schema.schemata"

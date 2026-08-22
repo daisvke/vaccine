@@ -55,6 +55,8 @@ class BlindExtractor:
         db_elem: str,
         expression: str,
         union_expression: str,
+        data_type: str = "",
+        char_max_len: int = 0,
     ) -> str:
         """
         Compute a database element's name
@@ -67,7 +69,6 @@ class BlindExtractor:
         )
 
         get_number = self.boolean.get_number if boolInjection else self.time.get_number
-
         get_string = self.boolean.get_string if boolInjection else self.time.get_string
 
         # Test if we can get the element's name included in the injection's response body
@@ -77,9 +78,18 @@ class BlindExtractor:
 
         # Get the database element's name length
         length_expression = fingerprints[self.database_engine.lower()].length
+
+        # To be used with LEN(), fix the length expression for legacy LOB types from SQL Server
+        if self.database_engine.lower() == "microsoft sql server":
+            data_type = data_type.lower()
+            if data_type == "text":
+                expression = f"CAST(({expression}) AS VARCHAR(MAX))"
+            elif data_type == "ntext":
+                expression = f"CAST(({expression}) AS NVARCHAR(MAX))"
+
         name_length_expression = length_expression.format(expression=expression)
 
-        max_length = (
+        max_length = char_max_len or (
             HEIGH_COL_VALUE_LENGTH if db_elem == "value" else HEIGH_ELEMENT_NAME_LENGTH
         )
 
@@ -167,6 +177,7 @@ class BlindExtractor:
         where: str,
         limit: str,
         data_type: str = "varchar",
+        char_max_len: int = 0,
     ) -> list[str]:
         """
         Get the number of entries that the database element (table, column) has,
@@ -214,9 +225,13 @@ class BlindExtractor:
                     db_elem,
                     expression,
                     union_expression,
+                    data_type,
+                    char_max_len,
                 )
             elif data_type in NUMERIC_TYPES:
-                db_elem_name = get_number(param, ctx, expression, HEIGH_MAX_NUMERIC_VALUE)
+                db_elem_name = get_number(
+                    param, ctx, expression, HEIGH_MAX_NUMERIC_VALUE
+                )
             elif data_type in BOOLEAN_TYPES:
                 db_elem_name = get_bool(param, ctx, expression)
             else:
@@ -340,7 +355,8 @@ class BlindExtractor:
                                 f"AND column_name = {sql_col_name})",
                                 HEIGH_MAX_CHAR_LENGTH,
                             )
-                            if re.sub(r"\(.*\)", "", data_type).strip().lower() in STRING_TYPES
+                            if re.sub(r"\(.*\)", "", data_type).strip().lower()
+                            in STRING_TYPES
                             else None
                         )
 

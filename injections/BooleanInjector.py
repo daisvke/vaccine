@@ -1,6 +1,7 @@
 from core.Analyzer import Analyzer
 from core.Requester import Requester
 from utils.constants import DIFFER_LENGTH_BOOL, InjectionContext, fingerprints
+from utils.Logger import Logger
 
 
 class BooleanInjector:
@@ -107,6 +108,7 @@ class BooleanInjector:
 
             # To check if the name length is higher to the current mid value
             payload = f"{ctx.prefix}AND {expression}>{mid}{ctx.suffix}"
+            Logger.debug(f"get_number payload: {payload}")
             response = self.requester.send({param: payload})
             # Logger.debug(f"Diff len: {diff_len}")
 

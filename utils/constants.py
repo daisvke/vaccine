@@ -33,7 +33,7 @@ Heigh values
 HEIGH_ELEMENT_NAME_LENGTH = 64
 HEIGH_COL_VALUE_LENGTH = 1024
 HEIGH_ELEMENT_COUNT = 1000
-HEIGH_MAX_CHAR_LENGTH = 1_000_000
+HEIGH_MAX_CHAR_LENGTH = 2_147_483_647
 HEIGH_MAX_NUMERIC_VALUE = 1_000_000_000_000
 
 
@@ -107,7 +107,7 @@ fingerprints = {
         char="ASCII(SUBSTRING({expression},{digit},1))",
         table_name="table_name",
         table_name_expression="UNION SELECT TOP 2 {columns} FROM information_schema.tables",
-        limit="ORDER BY {element} OFFSET {{nbr}} ROWS FETCH NEXT 1 ROW ONLY",
+        limit="ORDER BY [id] OFFSET {{nbr}} ROWS FETCH NEXT 1 ROW ONLY",
     ),
 }
 
