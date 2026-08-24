@@ -163,10 +163,10 @@ DB Fingerprinter ──┐
  |                 ▼     |
  |          Injection Engine ────▶ Get databases
  |                 |                    |
- |              ┌── ──┐                +-- get tables from information_schema.tables
- |              |     |                |       WHERE table_schema = <that database>
- |           Bool    Time              |
- |                                     +-- get columns from information_schema.columns
+ |              ┌── ──┐                 +-- get tables from information_schema.tables
+ |              |     |                 |       WHERE table_schema = <that database>
+ |           Bool    Time               |
+ |                                      +-- get columns from information_schema.columns
  |                                             WHERE table_schema = <that database>
  ▼
 Table Display of the Database
