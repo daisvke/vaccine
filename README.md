@@ -6,6 +6,8 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 
 > **Disclaimer:** Vaccine is intended for authorized security testing, educational labs, and CTF environments. Only use it against systems you own or have explicit permission to test.
 
+https://github.com/user-attachments/assets/6d7fae50-2dd6-47fb-b837-a04b868c0b03
+
 ---
 
 ## Table of Contents
@@ -28,13 +30,6 @@ Vaccine is a command-line tool designed to detect common SQL injection technique
 - [Tester](#tester)
 - [SQL Injection reference](#sql-injection-reference)
 - [Legal notice](#legal-notice)
-
----
-
-## TO DO
-
-- Video
-- Add to darkly
 
 ---
 
