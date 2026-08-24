@@ -17,7 +17,7 @@ class Analyzer:
     def responses_differ(self, r1: HttpResponse, r2: HttpResponse, diff: int) -> bool:
         # Logger.debug(r1.body)
         # Logger.debug(r2.body)
-        # Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {diff}")
+        # Logger.debug(f"Diff: {len(r1.body)},  {len(r2.body)}, {abs(len(r1.body) - len(r2.body))}, {diff}")
 
         # Without diff we only want to know if r1 body length is > to r2's
         if not diff:

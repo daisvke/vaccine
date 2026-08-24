@@ -77,7 +77,9 @@ options:
 
 ### View mode
 
-Vaccine supports a view mode for inspecting previously stored results without running another scan.
+Vaccine supports a view mode for inspecting previously stored results without running another scan:
+
+![view mode](screenshots/results.png)
 
 Use:
 

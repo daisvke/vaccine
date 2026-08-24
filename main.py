@@ -18,7 +18,7 @@ def main():
     args = parse_args()
 
     if args.debug:
-        Logger.DEBUG_ENABLED = False
+        Logger.DEBUG_ENABLED = True
         Logger.success("Enabled debug mode")
 
     storage = Storage(args.output)
