@@ -5,7 +5,7 @@ require "config/config-mariadb.php";
 $id = $_POST["id"] ?? "";
 
 $sql =
-"SELECT *
+"SELECT is_available, total_stock
 FROM products
 WHERE id=$id";
 
